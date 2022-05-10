@@ -58,22 +58,14 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
         seq0_re, seq_fe, seq_pup, seq0_yout, seq0_cout);
 
     assign seq0_din = pipeline[19:16];
-    assign seq0_rin = map_rom_data[3:0];
     // Case control
     assign case_ = pipeline[33];
-    // Guideline #3: When modeling combinational logic with an "always" 
-    //              block, use blocking assignments.
-    always @(*) begin
-        seq0_orin = 0;
-        if (case_ == 0) begin
-            seq0_orin[1] = alu_zero;
-        end
-    end
     assign seq0_s0 = ~pipeline[29];
     assign seq0_s1 = ~pipeline[30];
     assign seq0_cin = 1;
     assign seq0_re = 1;
     assign uc_rom_address[3:0] = seq0_yout[3:0];
+    assign seq0_rin = FBus[3:0];
 
     // Sequencer 1 (microcode address bits 7:4)
     wire [3:0] seq1_din;
@@ -90,20 +82,11 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
         seq1_re, seq_fe, seq_pup, seq1_yout, seq1_cout);
 
     assign seq1_din = pipeline[23:20];
-    assign seq1_rin = map_rom_data[7:4];
     assign seq1_s0 = ~pipeline[31];
-    always @(*) begin
-        seq1_orin = 0;
-        if (pipeline[54] == 0) begin
-            seq1_s1 = 0;
-        end else begin
-            seq1_s1 = ~pipeline[32];
-        end
-    end
     assign seq1_cin = seq0_cout;
     assign seq1_re = 1;
     assign uc_rom_address[7:4] = seq1_yout[3:0];
-
+    assign seq1_rin = FBus[7:4];
 
     // Sequencer 2 (microcode address bits 10:8)
     wire [3:0] seq2_din;
@@ -125,6 +108,21 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     assign seq2_cin = seq1_cout;
     assign seq2_re = 1;
     assign uc_rom_address[10:8] = seq2_yout[2:0];
+
+    // Guideline #3: When modeling combinational logic with an "always" 
+    //              block, use blocking assignments.
+    always @(*) begin
+        seq0_orin = 0;
+        if (case_ == 0) begin
+            seq0_orin[1] = alu_zero;
+        end
+        seq1_orin = 0;
+        if (pipeline[54] == 0) begin
+            seq1_s1 = 0;
+        end else begin
+            seq1_s1 = ~pipeline[32];
+        end
+    end
 
     /*
      * Am2901 bit slice Arithmetic Logic Units (ALUs)
@@ -218,6 +216,11 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
             iDBus = dataBus;
             // force instruction for testing
             iDBus = 8'h01;
+        end
+        FBus[3:0] = alu0_yout;
+        FBus[7:4] = alu1_yout;
+        if (h11 == 6) begin
+            FBus = map_rom_data;
         end
     end
 
