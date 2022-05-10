@@ -22,7 +22,19 @@ module Am2911(input wire clock, input wire [3:0] din,
     reg stackWr;
     reg [3:0] stack[0:3];
 
-    always @(*) begin
+    always @(*) begin        
+        stackWr = 0;
+        if (fe == 0) begin
+            stackWr = 0;
+            if (pup == 1) begin
+                stackWr = 1;
+                // Lookahead to pre-increment stack pointer
+                stackAddr = sp + 1;
+            end else begin
+                stackAddr = sp;
+            end
+        end
+
         mux = 0;
         if ((s1 == 0) && (s0 == 0)) begin
             mux = pc;
@@ -44,18 +56,6 @@ module Am2911(input wire clock, input wire [3:0] din,
         cout = 0;
         if (yout == 4'hf) begin
             cout = 1;
-        end
-        
-        stackWr = 0;
-        if (fe == 0) begin
-            stackWr = 0;
-            if (pup == 1) begin
-                stackWr = 1;
-                // Lookahead to pre-increment stack pointer
-                stackAddr = sp + 1;
-            end else begin
-                stackAddr = sp;
-            end
         end
     end
 
