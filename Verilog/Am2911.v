@@ -25,7 +25,6 @@ module Am2911(input wire clock, input wire [3:0] din,
     always @(*) begin        
         stackWr = 0;
         if (fe == 0) begin
-            stackWr = 0;
             if (pup == 1) begin
                 stackWr = 1;
                 // Lookahead to pre-increment stack pointer
@@ -60,9 +59,8 @@ module Am2911(input wire clock, input wire [3:0] din,
     end
 
     always @(posedge clock) begin
-        pc <= yout;
-        if (cin == 1) begin
-            pc <= yout + 1;
+        if (stackWr == 1) begin
+            stack[stackAddr] <= pc;
         end
         if (re == 0) begin
             ar <= din;
@@ -74,8 +72,9 @@ module Am2911(input wire clock, input wire [3:0] din,
                 sp <= sp - 1;
             end
         end
-        if (stackWr == 1) begin
-            stack[stackAddr] <= pc;
+        pc <= yout;
+        if (cin == 1) begin
+            pc <= yout + 1;
         end
     end
 endmodule

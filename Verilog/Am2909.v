@@ -27,7 +27,6 @@ module Am2909(input wire clock, input wire [3:0] din, input wire [3:0] rin, inpu
     always @(*) begin        
         stackWr = 0;
         if (fe == 0) begin
-            stackWr = 0;
             if (pup == 1) begin
                 stackWr = 1;
                 // Lookahead to pre-increment stack pointer
@@ -64,9 +63,8 @@ module Am2909(input wire clock, input wire [3:0] din, input wire [3:0] rin, inpu
     // Guideline #1: When modeling sequential logic, use nonblocking 
     //              assignments.
     always @(posedge clock) begin
-        pc <= yout;
-        if (cin == 1) begin
-            pc <= yout + 1;
+        if (stackWr == 1) begin
+            stack[stackAddr] <= pc;
         end
         if (re == 0) begin
             ar <= rin;
@@ -78,8 +76,9 @@ module Am2909(input wire clock, input wire [3:0] din, input wire [3:0] rin, inpu
                 sp <= sp - 1;
             end
         end
-        if (stackWr == 1) begin
-            stack[stackAddr] <= pc;
+        pc <= yout;
+        if (cin == 1) begin
+            pc <= yout + 1;
         end
     end
 endmodule
