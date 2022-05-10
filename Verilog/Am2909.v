@@ -13,7 +13,6 @@ module Am2909(input wire clock, input wire [3:0] din, input wire [3:0] rin, inpu
         mux = 0;
         stackWr = 0;
         for (i=0;i<4;i=i+1) stack[i] = 0;
-        topOfStack = 0;
     end
 
     reg [3:0] pc;
@@ -22,7 +21,6 @@ module Am2909(input wire clock, input wire [3:0] din, input wire [3:0] rin, inpu
     reg [3:0] mux;
     reg stackWr;
     reg [3:0] stack[0:3];
-    reg [3:0] topOfStack;
 
     // Guideline #3: When modeling combinational logic with an "always" 
     //              block, use blocking assignments.
@@ -38,7 +36,6 @@ module Am2909(input wire clock, input wire [3:0] din, input wire [3:0] rin, inpu
                 stackAddr = sp;
             end
         end
-        topOfStack = stack[stackAddr];
 
         mux = 0;
         if ((s1 == 0) && (s0 == 0)) begin
