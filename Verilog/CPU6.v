@@ -25,80 +25,73 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     // Pipeline register
     reg [55:0] pipeline;
 
+    // Sequencer shared nets
+    wire seq_fe;
+    wire seq_pup;
+    wire seq_zero;
+
     // Am2909/2911 Microsequencers
     wire [3:0] seq0_din;
     wire [3:0] seq0_rin;
     reg [3:0] seq0_orin;
     wire seq0_s0;
     wire seq0_s1;
-    wire seq0_zero;
     wire seq0_cin;
     wire seq0_re;
-    wire seq0_fe;
-    wire seq0_pup;
     wire [3:0] seq0_yout;
     wire seq0_cout;
-    Am2909 seq0(clock, seq0_din, seq0_rin, seq0_orin, seq0_s0, seq0_s1, seq0_zero, seq0_cin,
-        seq0_re, seq0_fe, seq0_pup, seq0_yout, seq0_cout);
+    Am2909 seq0(clock, seq0_din, seq0_rin, seq0_orin, seq0_s0, seq0_s1, seq_zero, seq0_cin,
+        seq0_re, seq_fe, seq_pup, seq0_yout, seq0_cout);
 
     wire [3:0] seq1_din;
     wire [3:0] seq1_rin;
     reg [3:0] seq1_orin;
     wire seq1_s0;
     reg seq1_s1;
-    wire seq1_zero;
     wire seq1_cin;
     wire seq1_re;
-    wire seq1_fe;
-    wire seq1_pup;
     wire [3:0] seq1_yout;
     wire seq1_cout;
-    Am2909 seq1(clock, seq1_din, seq1_rin, seq1_orin, seq1_s0, seq1_s1, seq1_zero, seq1_cin,
-        seq1_re, seq1_fe, seq1_pup, seq1_yout, seq1_cout);
+    Am2909 seq1(clock, seq1_din, seq1_rin, seq1_orin, seq1_s0, seq1_s1, seq_zero, seq1_cin,
+        seq1_re, seq_fe, seq_pup, seq1_yout, seq1_cout);
 
     wire [3:0] seq2_din;
     wire [3:0] seq2_rin;
     wire seq2_s0;
     wire seq2_s1;
-    wire seq2_zero;
     wire seq2_cin;
     wire seq2_re;
-    wire seq2_fe;
-    wire seq2_pup;
     wire [3:0] seq2_yout;
     wire seq2_cout;
-    Am2911 seq2(clock, seq2_din, seq2_s0, seq2_s1, seq2_zero, seq2_cin, seq2_re, seq2_fe,
-        seq2_pup, seq2_yout, seq2_cout);
+    Am2911 seq2(clock, seq2_din, seq2_s0, seq2_s1, seq_zero, seq2_cin, seq2_re, seq_fe,
+        seq_pup, seq2_yout, seq2_cout);
+
+    // ALU shared nets
+    wire [3:0] alu_a;
+    wire [3:0] alu_b;
+    wire [2:0] alu_src;
+    wire [2:0] alu_op;
+    wire [2:0] alu_dest;
 
     // Am2901 ALUs
     wire [3:0] alu0_din;
-    wire [3:0] alu0_a;
-    wire [3:0] alu0_b;
-    wire [2:0] alu0_src;
-    wire [2:0] alu0_op;
-    wire [2:0] alu0_dest;
     reg alu0_cin;
     wire [3:0] alu0_yout;
     wire alu0_cout;
     wire alu0_f0;
     wire alu0_f3;
     wire alu0_ovr;
-    Am2901 alu0(clock, alu0_din, alu0_a, alu0_b, alu0_src, alu0_op, alu0_dest, alu0_cin,
+    Am2901 alu0(clock, alu0_din, alu_a, alu_b, alu_src, alu_op, alu_dest, alu0_cin,
         alu0_yout, alu0_cout, alu0_f0, alu0_f3, alu0_ovr);
 
     wire [3:0] alu1_din;
-    wire [3:0] alu1_a;
-    wire [3:0] alu1_b;
-    wire [2:0] alu1_src;
-    wire [2:0] alu1_op;
-    wire [2:0] alu1_dest;
     wire alu1_cin;
     wire [3:0] alu1_yout;
     wire alu1_cout;
     wire alu1_f0;
     wire alu1_f3;
     wire alu1_ovr;
-    Am2901 alu1(clock, alu1_din, alu1_a, alu1_b, alu1_src, alu1_op, alu1_dest, alu1_cin,
+    Am2901 alu1(clock, alu1_din, alu_a, alu_b, alu_src, alu_op, alu_dest, alu1_cin,
         alu1_yout, alu1_cout, alu1_f0, alu1_f3, alu1_ovr);
 
     // ALU flags
@@ -122,6 +115,11 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     // Shift/carry select
     wire [1:0] shift_carry;
 
+    // Sequencer shared nets
+    assign seq_zero = zero;
+    assign seq_fe = pipeline[27];
+    assign seq_pup = pipeline[28];
+
     // Sequencer 0
     assign seq0_din = pipeline[19:16];
     assign seq0_rin = map_rom_data[3:0];
@@ -137,11 +135,8 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     end
     assign seq0_s0 = ~pipeline[29];
     assign seq0_s1 = ~pipeline[30];
-    assign seq0_zero = zero;
     assign seq0_cin = 1;
     assign seq0_re = 1;
-    assign seq0_fe = pipeline[27];
-    assign seq0_pup = pipeline[28];
     assign uc_rom_address[3:0] = seq0_yout[3:0];
 
     // Sequencer 1
@@ -156,11 +151,8 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
             seq1_s1 = ~pipeline[32];
         end
     end
-    assign seq1_zero = zero;
     assign seq1_cin = seq0_cout;
     assign seq1_re = 1;
-    assign seq1_fe = pipeline[27];
-    assign seq1_pup = pipeline[28];
     assign uc_rom_address[7:4] = seq1_yout[3:0];
 
     // Sequencer 2
@@ -168,20 +160,19 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     assign seq2_orin = 0;
     assign seq2_s0 = ~pipeline[31];
     assign seq2_s1 = ~pipeline[32];
-    assign seq2_zero = zero;
     assign seq2_cin = seq1_cout;
     assign seq2_re = 1;
-    assign seq2_fe = pipeline[27];
-    assign seq2_pup = pipeline[28];
     assign uc_rom_address[10:8] = seq2_yout[2:0];
+
+    // ALU shared nets
+    assign alu_a = pipeline[50:47];
+    assign alu_b = pipeline[46:43];
+    assign alu_src = pipeline[36:34];
+    assign alu_op = pipeline[39:37];
+    assign alu_dest = pipeline[42:40];
 
     // ALU 0
     assign alu0_din = iDBus[3:0];
-    assign alu0_a = pipeline[50:47];
-    assign alu0_b = pipeline[46:43];
-    assign alu0_src = pipeline[36:34];
-    assign alu0_op = pipeline[39:37];
-    assign alu0_dest = pipeline[42:40];
     always @(*) begin
         alu0_cin = 0;
         if (shift_carry == 0) begin
@@ -197,11 +188,6 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
 
     // ALU 1
     assign alu1_din = iDBus[7:4];
-    assign alu1_a = pipeline[50:47];
-    assign alu1_b = pipeline[46:43];
-    assign alu1_src = pipeline[36:34];
-    assign alu1_op = pipeline[39:37];
-    assign alu1_dest = pipeline[42:40];
     assign alu1_cin = alu0_cout;
 
     // Shift/carry select
