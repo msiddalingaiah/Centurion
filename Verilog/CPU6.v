@@ -109,21 +109,6 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     assign seq2_re = 1;
     assign uc_rom_address[10:8] = seq2_yout[2:0];
 
-    // Guideline #3: When modeling combinational logic with an "always" 
-    //              block, use blocking assignments.
-    always @(*) begin
-        seq0_orin = 0;
-        if (case_ == 0) begin
-            seq0_orin[1] = alu_zero;
-        end
-        seq1_orin = 0;
-        if (pipeline[54] == 0) begin
-            seq1_s1 = 0;
-        end else begin
-            seq1_s1 = ~pipeline[32];
-        end
-    end
-
     /*
      * Am2901 bit slice Arithmetic Logic Units (ALUs)
      */
@@ -155,18 +140,6 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     assign shift_carry = pipeline[52:51];
 
     assign alu0_din = iDBus[3:0];
-    always @(*) begin
-        alu0_cin = 0;
-        if (shift_carry == 0) begin
-            alu0_cin = 0;
-        end else if (shift_carry == 1) begin
-            alu0_cin = 1;
-        end else if (shift_carry == 2) begin
-            alu0_cin = alu1_cout;
-        end else if (shift_carry == 3) begin
-            alu0_cin = 0;
-        end
-    end
 
     // ALU 1 (bits 7:4)
     wire [3:0] alu1_din;
@@ -205,8 +178,32 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     reg [7:0] iDBus;
     reg [7:0] FBus;
 
-    // Datapath muxes
+    // Guideline #3: When modeling combinational logic with an "always" 
+    //              block, use blocking assignments.
     always @(*) begin
+        seq0_orin = 0;
+        if (case_ == 0) begin
+            seq0_orin[1] = alu_zero;
+        end
+        seq1_orin = 0;
+        if (pipeline[54] == 0) begin
+            seq1_s1 = 0;
+        end else begin
+            seq1_s1 = ~pipeline[32];
+        end
+
+        alu0_cin = 0;
+        if (shift_carry == 0) begin
+            alu0_cin = 0;
+        end else if (shift_carry == 1) begin
+            alu0_cin = 1;
+        end else if (shift_carry == 2) begin
+            alu0_cin = alu1_cout;
+        end else if (shift_carry == 3) begin
+            alu0_cin = 0;
+        end
+
+        // Datapath muxes
         iDBus = 0;
         FBus = 0;
 
@@ -224,6 +221,8 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
         end
     end
 
+    // Guideline #1: When modeling sequential logic, use nonblocking 
+    //              assignments.
     always @(posedge clock) begin
         pipeline <= uc_rom_data;
         alu_zero <= alu0_f0 & alu1_f0;
