@@ -26,13 +26,12 @@ module Am2909(input wire clock, input wire [3:0] din, input wire [3:0] rin, inpu
     //              block, use blocking assignments.
     always @(*) begin        
         stackWr = 0;
+        stackAddr = sp;
         if (fe == 0) begin
             if (pup == 1) begin
                 stackWr = 1;
                 // Lookahead to pre-increment stack pointer
                 stackAddr = sp + 1;
-            end else begin
-                stackAddr = sp;
             end
         end
 
