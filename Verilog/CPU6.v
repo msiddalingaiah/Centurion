@@ -57,21 +57,19 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
 
     // Sequencer 1 (microcode address bits 7:4)
     wire [3:0] seq1_din = pipeline[23:20];
-    wire [3:0] seq1_rin;
+    wire [3:0] seq1_rin = FBus[7:4];
     reg [3:0] seq1_orin;
     wire seq1_s0 = ~pipeline[31];
     reg seq1_s1;
     wire seq1_cin = seq0_cout;
-    wire seq1_re;
+    wire seq1_re = 1;
     wire [3:0] seq1_yout;
     wire seq1_cout;
 
     Am2909 seq1(clock, seq1_din, seq1_rin, seq1_orin, seq1_s0, seq1_s1, seq_zero, seq1_cin,
         seq1_re, seq_fe, seq_pup, seq1_yout, seq1_cout);
 
-    assign seq1_re = 1;
     assign uc_rom_address[7:4] = seq1_yout[3:0];
-    assign seq1_rin = FBus[7:4];
 
     // Sequencer 2 (microcode address bits 10:8)
     wire [3:0] seq2_din = pipeline[26:24];
@@ -99,7 +97,7 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     wire [2:0] alu_dest = pipeline[42:40];
 
     // ALU 0 (bits 3:0)
-    wire [3:0] alu0_din;
+    wire [3:0] alu0_din = iDBus[3:0];
     reg alu0_cin;
     wire [3:0] alu0_yout;
     wire alu0_cout;
@@ -111,8 +109,6 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
 
     // Shift/carry select
     wire [1:0] shift_carry = pipeline[52:51];
-
-    assign alu0_din = iDBus[3:0];
 
     // ALU 1 (bits 7:4)
     wire [3:0] alu1_din = iDBus[7:4];
