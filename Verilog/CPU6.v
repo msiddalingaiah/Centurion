@@ -18,7 +18,7 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     reg alu_zero;
 
     // 6309 ROM
-    wire [7:0] map_rom_address = iDBus;
+    wire [7:0] map_rom_address = DPBus;
     wire [7:0] map_rom_data;
     MapROM map_rom(map_rom_address, map_rom_data);
 
@@ -97,7 +97,7 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     wire [2:0] alu_dest = pipeline[42:40];
 
     // ALU 0 (bits 3:0)
-    wire [3:0] alu0_din = iDBus[3:0];
+    wire [3:0] alu0_din = DPBus[3:0];
     reg alu0_cin;
     wire [3:0] alu0_yout;
     wire alu0_cout;
@@ -111,7 +111,7 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     wire [1:0] shift_carry = pipeline[52:51];
 
     // ALU 1 (bits 7:4)
-    wire [3:0] alu1_din = iDBus[7:4];
+    wire [3:0] alu1_din = DPBus[7:4];
     wire alu1_cin = alu0_cout;
     wire [3:0] alu1_yout;
     wire alu1_cout;
@@ -134,8 +134,11 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     wire [7:0] constant = ~pipeline[16+7:16];
 
     // Internal Busses
-    reg [7:0] iDBus;
+    // Register RAM reads from FBus (not certain)
+    // Register RAM writes to DPBus
+    reg [7:0] DPBus;
     reg [7:0] FBus;
+    reg [7:0] RBus;
 
     // Guideline #3: When modeling combinational logic with an "always" 
     //              block, use blocking assignments.
@@ -172,15 +175,15 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
         end
 
         // Datapath muxes
-        iDBus = 0;
+        DPBus = 0;
         FBus = 0;
 
         if (d2d3 == 13) begin
-            iDBus = constant;
+            DPBus = constant;
         end else if (d2d3 == 10) begin
-            iDBus = dataBus;
+            DPBus = dataBus;
             // force instruction for testing
-            iDBus = 8'h3f;
+            DPBus = 8'h3f;
         end
         FBus[3:0] = alu0_yout;
         FBus[7:4] = alu1_yout;
