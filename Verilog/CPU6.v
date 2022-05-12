@@ -18,7 +18,7 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     reg alu_zero;
 
     // 6309 ROM
-    wire [7:0] map_rom_address;
+    wire [7:0] map_rom_address = iDBus;
     wire [7:0] map_rom_data;
     MapROM map_rom(map_rom_address, map_rom_data);
 
@@ -44,7 +44,7 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     wire seq0_s0 = ~pipeline[29];
     wire seq0_s1 = ~pipeline[30];
     wire seq0_cin = 1;
-    wire seq0_re = 1;
+    reg seq0_re;
     wire [3:0] seq0_yout;
     wire seq0_cout;
 
@@ -62,7 +62,7 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     wire seq1_s0 = ~pipeline[31];
     reg seq1_s1;
     wire seq1_cin = seq0_cout;
-    wire seq1_re = 1;
+    reg seq1_re;
     wire [3:0] seq1_yout;
     wire seq1_cout;
 
@@ -125,9 +125,10 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     // d2d3 is decoded before pipeline, but outputs are registered.
     wire [3:0] d2d3 = pipeline[3:0];
     wire [1:0] e7 = pipeline[14:13];
-    wire [2:0] h11 = pipeline[9:7];
-    wire [2:0] k11 = pipeline[12:10];
+    wire [2:0] h11 = pipeline[12:10];
+    wire [2:0] k11 = pipeline[9:7];
     wire [2:0] e6 = pipeline[6:4];
+    wire [1:0] uj13 = pipeline[5:4];
 
     // Constant (immediate data)
     wire [7:0] constant = ~pipeline[16+7:16];
@@ -139,17 +140,6 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     // Guideline #3: When modeling combinational logic with an "always" 
     //              block, use blocking assignments.
     always @(*) begin
-        seq0_orin = 0;
-        if (case_ == 0) begin
-            seq0_orin[1] = alu_zero;
-        end
-        seq1_orin = 0;
-        if (pipeline[54] == 0) begin
-            seq1_s1 = 0;
-        end else begin
-            seq1_s1 = ~pipeline[32];
-        end
-
         alu0_cin = 0;
         if (shift_carry == 0) begin
             alu0_cin = 0;
@@ -161,6 +151,26 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
             alu0_cin = 0;
         end
 
+        seq0_orin = 0;
+        if (case_ == 0) begin
+            if (uj13 == 0) begin
+                seq0_orin[1] = alu_zero;
+            end
+        end
+        seq1_orin = 0;
+        if (pipeline[54] == 0) begin
+            seq1_s1 = 0;
+        end else begin
+            seq1_s1 = ~pipeline[32];
+        end
+
+        seq0_re = 1;
+        seq1_re = 1;
+        if (e6 == 6) begin
+            seq0_re = 0;
+            seq1_re = 0;
+        end
+
         // Datapath muxes
         iDBus = 0;
         FBus = 0;
@@ -170,7 +180,7 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
         end else if (d2d3 == 10) begin
             iDBus = dataBus;
             // force instruction for testing
-            iDBus = 8'h01;
+            iDBus = 8'h3f;
         end
         FBus[3:0] = alu0_yout;
         FBus[7:4] = alu1_yout;
