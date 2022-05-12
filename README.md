@@ -11,8 +11,15 @@ The [Verilog](https://en.wikipedia.org/wiki/Verilog) implementation has been tes
 The build process is straightforward:
 
 ```
+> cd Verilog
 > iverilog -o CPU6TestBench CPU6TestBench.v
 > vvp CPU6TestBench
 ```
 
 The simulation output is saved in the ```Verilog/vcd``` directory. It can be viewed using [GTK Wave](http://gtkwave.sourceforge.net/).
+
+The CPU6 is an interesting design. It is based on the [AMD Am2900](https://en.wikipedia.org/wiki/AMD_Am2900) family of bit slice devices. The entire CPU fits on a single board, using two Am2901s to make an 8-bit ALU. The control unit is [microcoded](https://en.wikipedia.org/wiki/Microcode), using 2 Am2909 microsequencers, and 1 Am2911 microsequencer with a 1024 word x 56-bit microprogram stored in EPROMs. It is typical of minicomputers of that era. Discrete CPUs based on the Am2900 family were soon superceded by fully integrated VLSI CPUs, such as the [Intel 8086](https://en.wikipedia.org/wiki/Intel_8086), [Motorola 68000](https://en.wikipedia.org/wiki/Motorola_68000), and several others.
+
+Below is a sample microcode execution trace. The marker shows where the microsequencer is jumping to execute the DCX (decrement X register, opcode 0x3f) instruction.
+
+![DCX Instruction](images/DCX.png "DCX Instruction Execution")

@@ -128,7 +128,7 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     wire [2:0] h11 = pipeline[12:10];
     wire [2:0] k11 = pipeline[9:7];
     wire [2:0] e6 = pipeline[6:4];
-    wire [1:0] uj13 = pipeline[5:4];
+    wire [1:0] j13 = pipeline[5:4];
 
     // Constant (immediate data)
     wire [7:0] constant = ~pipeline[16+7:16];
@@ -153,7 +153,7 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
 
         seq0_orin = 0;
         if (case_ == 0) begin
-            if (uj13 == 0) begin
+            if (j13 == 0) begin
                 seq0_orin[1] = alu_zero;
             end
         end
