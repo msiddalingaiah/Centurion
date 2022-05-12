@@ -54,7 +54,7 @@ module Am2909(input wire clock, input wire [3:0] din, input wire [3:0] rin, inpu
             yout = mux | orin;
         end
         cout = 0;
-        if (yout == 4'hf) begin
+        if (yout == 4'hf && cin == 1) begin
             cout = 1;
         end
     end
