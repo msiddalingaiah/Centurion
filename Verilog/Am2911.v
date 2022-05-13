@@ -52,7 +52,7 @@ module Am2911(input wire clock, input wire [3:0] din,
             yout = mux;
         end
         cout = 0;
-        if (yout == 4'hf) begin
+        if (yout == 4'hf && cin == 1) begin
             cout = 1;
         end
     end

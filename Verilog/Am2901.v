@@ -67,7 +67,7 @@ module Am2901(input wire clock, input wire [3:0] din, input wire [3:0] aSel,
         end if (aluOp == 4) begin
             f = r & s;
         end if (aluOp == 5) begin
-            f = (~r) + s;
+            f = (~r) & s;
         end if (aluOp == 6) begin
             f = r ^ s;
         end if (aluOp == 7) begin

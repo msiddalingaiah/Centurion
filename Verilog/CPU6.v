@@ -6,8 +6,24 @@
 `include "MapROM.v"
 
 module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output reg [15:0] addressBus);
+    integer i;
     initial begin
+        for (i=0;i<16;i=i+1) test_instructions[i] = 1;
+        test_instructions[2] = 8'h0e;
+
+        tip = 0;
+        cycle_counter = 0;
     end
+
+    /*
+     * Instrumentation
+     */
+
+    wire instruction_start = uc_rom_address == 11'h101;
+    reg [7:0] test_instructions[0:15];
+    reg [3:0] tip;
+    wire [7:0] test_instruction = test_instructions[tip];
+    reg [31:0] cycle_counter;
 
     /*
      * Rising edge triggered registers
@@ -149,7 +165,7 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
         end else if (shift_carry == 1) begin
             alu0_cin = 1;
         end else if (shift_carry == 2) begin
-            alu0_cin = alu1_cout;
+            alu0_cin = ~alu_zero;
         end else if (shift_carry == 3) begin
             alu0_cin = 0;
         end
@@ -183,7 +199,7 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
         end else if (d2d3 == 10) begin
             DPBus = dataBus;
             // force instruction for testing
-            DPBus = 8'h3f;
+            DPBus = test_instruction;
         end
         FBus[3:0] = alu0_yout;
         FBus[7:4] = alu1_yout;
@@ -197,5 +213,42 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     always @(posedge clock) begin
         pipeline <= uc_rom_data;
         alu_zero <= alu0_f0 & alu1_f0;
+        if (instruction_start == 1) begin
+            tip <= tip + 1;
+            cycle_counter <= 1;
+        end else begin
+            cycle_counter <= cycle_counter + 1;
+        end
     end
 endmodule
+
+/*
+Cycle counts
+
+Op  Cycle count (decimal)
+1   4
+2   5
+3   5
+4   46
+5   46
+6   5
+7   5
+8   5
+9   22
+0a  46
+0b  44
+0c  6
+0d  9
+0e  46
+0f  46
+
+38  7
+39  7
+3a  6
+3b  7
+3c  10
+3d  8
+3e  10
+3f  10
+
+ */

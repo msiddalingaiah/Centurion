@@ -6,11 +6,11 @@ module Clock(output reg reset, output reg clock);
     initial begin
         #0 clock = 1'b0;
         #0 reset = 1'b0;
-        #2 reset = 1;
-        #7 reset = 0;
+        #50 reset = 1;
+        #100 reset = 0;
     end
 
     always begin
-        #5 clock <= ~clock;
+        #100 clock <= ~clock;
     end
 endmodule
