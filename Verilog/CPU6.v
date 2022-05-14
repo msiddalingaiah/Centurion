@@ -8,11 +8,20 @@
 module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output reg [15:0] addressBus);
     integer i;
     initial begin
-        for (i=0;i<16;i=i+1) test_instructions[i] = 1;
-        test_instructions[2] = 8'h0e;
+        for (i=0; i<16; i=i+1) test_instructions[i] = 1;
+        test_instructions[2] = 8'h81;
+        test_instructions[3] = 8'h82;
+        test_instructions[4] = 8'h83;
+        test_instructions[5] = 8'h80;
+        test_instructions[6] = 8'h81;
+        test_instructions[7] = 8'h20;
+        test_instructions[8] = 8'h07;
 
         tip = 0;
         cycle_counter = 0;
+
+        for (i=0; i<256; i=i+1) register_ram[i] = 8'hff;
+        swap_register = 0;
     end
 
     /*
@@ -24,11 +33,16 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     reg [3:0] tip;
     wire [7:0] test_instruction = test_instructions[tip];
     reg [31:0] cycle_counter;
+    wire [7:0] register0 = register_ram[0];
+    wire [7:0] register1 = register_ram[1];
+    reg pc_increment;
 
     /*
      * Rising edge triggered registers
      */
     // Pipeline register
+    // if bit 15 = 1 updates zero bit in J9 so lo and high byte are consistent, reset if bit 15 = 0
+    // e.g. propagate zero from low byte to higher bytes when pipeline[15] is 1
     reg [55:0] pipeline;
     // ALU flags register
     reg alu_zero;
@@ -149,6 +163,11 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     // Constant (immediate data)
     wire [7:0] constant = ~pipeline[16+7:16];
 
+    reg [7:0] register_ram[0:255];
+    reg [7:0] register_index;
+    reg [7:0] register_value;
+    reg [7:0] swap_register;
+
     // Internal Busses
     // Register RAM reads from FBus (not certain)
     // Register RAM writes to DPBus
@@ -165,6 +184,7 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
         end else if (shift_carry == 1) begin
             alu0_cin = 1;
         end else if (shift_carry == 2) begin
+            // really comes from j9, see pipeline[15] above
             alu0_cin = ~alu_zero;
         end else if (shift_carry == 3) begin
             alu0_cin = 0;
@@ -196,15 +216,36 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
 
         if (d2d3 == 13) begin
             DPBus = constant;
+        end else if (d2d3 == 0) begin
+            DPBus = swap_register;
+        end else if (d2d3 == 1) begin
+            DPBus = register_ram[register_index];
+        end else if (d2d3 == 2) begin
+            // DPBus = address hi, high nibble inverted
+        end else if (d2d3 == 8) begin
+            // DPBus = translated address hi, 17:11 (17 down), and top 3 bits together
+        end else if (d2d3 == 9) begin
+            // DPBus = 4 bits from DIP switches, other 4?
         end else if (d2d3 == 10) begin
             DPBus = dataBus;
             // force instruction for testing
             DPBus = test_instruction;
+        end else if (d2d3 == 11) begin
+            // read ILR (interrupt level register?) H14 4 bits, A8 4 bits current level
+        end else if (d2d3 == 12) begin
+            // read switch 2 other half of dip switches and condition codes?
         end
         FBus[3:0] = alu0_yout;
         FBus[7:4] = alu1_yout;
         if (h11 == 6) begin
             FBus = map_rom_data;
+        end
+
+        pc_increment = 0;
+        // Both seem to work sometimes, h11 == 5 seems to be the best
+        // if (h11 == 1) begin // not so good
+        if (h11 == 5) begin // good!
+            pc_increment = 1;
         end
     end
 
@@ -214,41 +255,103 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
         pipeline <= uc_rom_data;
         alu_zero <= alu0_f0 & alu1_f0;
         if (instruction_start == 1) begin
-            tip <= tip + 1;
+            //$display("Opcode: 0x%02x, cycles: %5d", test_instruction, cycle_counter);
             cycle_counter <= 1;
         end else begin
             cycle_counter <= cycle_counter + 1;
+        end
+        // PC increment
+        if (pc_increment == 1) begin
+            tip <= tip + 1;
+        end
+        // e6.1 register value
+        if (e6 == 1) begin
+            register_value <= FBus;
+        end
+        // e6.2 register index
+        // uC bit 53 might simplify 16 bit register write
+        if (e6 == 2) begin
+            register_index <= FBus;
+        end
+        if (e6 == 3) begin
+            // load D9
+        end
+        if (e6 == 4) begin
+            // load page table base register
+        end
+        if (e6 == 5) begin
+            // load machine address register
+        end
+        if (e6 == 6) begin
+            // load AR on 2909, see above
+        end
+        if (e6 == 7) begin
+            // load condition code register M12
+        end
+        if (k11 == 3) begin
+            // enable F11 addressable latch, machine state, bus state
+            // A0-2 on F11 are B1-3 and D input is B0
+        end
+        // k11.4 write RAM
+        if (k11 == 4) begin
+            register_ram[register_index] <= register_value;
+        end
+        if (k11 == 6) begin
+            // address work register lo byte
+        end
+        if (k11 == 7) begin
+            // might be a bus write
+        end
+        if (h11 == 3) begin
+            // load work address register hi
+        end
+        if (h11 == 6) begin
+            // see above
+        end
+        if (e7 == 2) begin
+            // save condition codes from ALU to J9
         end
     end
 endmodule
 
 /*
+
+TotalSeconds      : 1.0773913
+TotalMilliseconds : 1077.3913
+4.9 ms simulation time = 220 times slower than hardware Centurion
+About 22.75 kHz clock simulated
+
+First instruction is fetched about 40 uS after reset.
+
 Cycle counts
 
-Op  Cycle count (decimal)
-1   4
-2   5
-3   5
-4   46
-5   46
-6   5
-7   5
-8   5
-9   22
-0a  46
-0b  44
-0c  6
-0d  9
-0e  46
-0f  46
+Opcode: 0x01, cycles:     4
+Opcode: 0x02, cycles:     5
+Opcode: 0x03, cycles:     5
+Opcode: 0x04, cycles:     8
+Opcode: 0x05, cycles:     8
+Opcode: 0x06, cycles:     5
+Opcode: 0x07, cycles:     5
+Opcode: 0x08, cycles:     5
+Opcode: 0x09, cycles:    22
+Opcode: 0x0a, cycles:    31
+Opcode: 0x0b, cycles:    44
+Opcode: 0x0c, cycles:     6
+Opcode: 0x0d, cycles:     9
+Opcode: 0x0e, cycles: 22722
+Opcode: 0x0f, cycles:    42
 
-38  7
-39  7
-3a  6
-3b  7
-3c  10
-3d  8
-3e  10
-3f  10
+Opcode: 0x21, cycles:    12
+
+Opcode: 0x38, cycles:     7
+Opcode: 0x39, cycles:     7
+Opcode: 0x3a, cycles:     6
+Opcode: 0x3b, cycles:     7
+Opcode: 0x3c, cycles:    10
+Opcode: 0x3d, cycles:     8
+Opcode: 0x3e, cycles:    10
+Opcode: 0x3f, cycles:    10
+Opcode: 0x81, cycles:     8
+Opcode: 0x83, cycles:    18
 
  */

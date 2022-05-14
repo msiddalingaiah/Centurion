@@ -7,7 +7,7 @@ module CPU6TestBench;
     initial begin
         $dumpfile("vcd/CPUTestBench.vcd"); 
         $dumpvars(0, CPU6TestBench);
-        #49000 $finish;
+        #50000 $finish;
     end
 
     wire clock, reset;
