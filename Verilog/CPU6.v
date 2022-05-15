@@ -83,7 +83,6 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
 
     // Case control
     wire case_ = pipeline[33];
-    assign uc_rom_address[3:0] = seq0_yout[3:0];
 
     // Sequencer 1 (microcode address bits 7:4)
     wire [3:0] seq1_din = pipeline[23:20];
@@ -99,7 +98,6 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     Am2909 seq1(clock, seq1_din, seq1_rin, seq1_orin, seq1_s0, seq1_s1, seq_zero, seq1_cin,
         seq1_re, seq_fe, seq_pup, seq1_yout, seq1_cout);
 
-    assign uc_rom_address[7:4] = seq1_yout[3:0];
 
     // Sequencer 2 (microcode address bits 10:8)
     wire [3:0] seq2_din = pipeline[26:24];
@@ -114,7 +112,7 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     Am2911 seq2(clock, seq2_din, seq2_s0, seq2_s1, seq_zero, seq2_cin, seq2_re, seq_fe,
         seq_pup, seq2_yout, seq2_cout);
 
-    assign uc_rom_address[10:8] = seq2_yout[2:0];
+    assign uc_rom_address = { seq2_yout, seq1_yout, seq0_yout };
 
     /*
      * Am2901 bit slice Arithmetic Logic Units (ALUs)
@@ -235,8 +233,8 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
         end else if (d2d3 == 12) begin
             // read switch 2 other half of dip switches and condition codes?
         end
-        FBus[3:0] = alu0_yout;
-        FBus[7:4] = alu1_yout;
+
+        FBus = { alu1_yout, alu0_yout };
         if (h11 == 6) begin
             FBus = map_rom_data;
         end
@@ -295,6 +293,7 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
         // k11.4 write RAM
         if (k11 == 4) begin
             register_ram[register_index] <= register_value;
+            //$display("r[%d] = %02x", register_index, register_value);
         end
         if (k11 == 6) begin
             // address work register lo byte

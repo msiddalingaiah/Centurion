@@ -29,50 +29,30 @@ module Am2901(input wire clock, input wire [3:0] din, input wire [3:0] aSel,
         b = regs[bSel];
         r = 0;
         s = 0;
-        if (aluSrc == 0) begin
-            r = a;
-            s = q;
-        end if (aluSrc == 1) begin
-            r = a;
-            s = b;
-        end if (aluSrc == 2) begin
-            r = 0;
-            s = q;
-        end if (aluSrc == 3) begin
-            r = 0;
-            s = b;
-        end if (aluSrc == 4) begin
-            r = 0;
-            s = a;
-        end if (aluSrc == 5) begin
-            r = din;
-            s = a;
-        end if (aluSrc == 6) begin
-            r = din;
-            s = q;
-        end if (aluSrc == 7) begin
-            r = din;
-            s = 0;
-        end
 
-        f = 0;
-        if (aluOp == 0) begin
-            f = r + s + cin;
-        end if (aluOp == 1) begin
-            f = s + ((~r) & 4'hf) + cin;
-        end if (aluOp == 2) begin
-            f = r + ((~s) & 4'hf) + cin;
-        end if (aluOp == 3) begin
-            f = r | s;
-        end if (aluOp == 4) begin
-            f = r & s;
-        end if (aluOp == 5) begin
-            f = (~r) & s;
-        end if (aluOp == 6) begin
-            f = r ^ s;
-        end if (aluOp == 7) begin
-            f = ~(r ^ s);
-        end
+        case (aluSrc)
+            0: begin r = a; s = q; end
+            1: begin r = a; s = b; end
+            2: begin r = 0; s = q; end
+            3: begin r = 0; s = b; end
+            4: begin r = 0; s = a; end
+            5: begin r = din; s = a; end
+            6: begin r = din; s = q; end
+            7: begin r = din; s = 0; end
+            default: ;
+        endcase
+
+        case (aluOp)
+            0: f = r + s + cin;
+            1: f = s + ((~r) & 4'hf) + cin;
+            2: f = r + ((~s) & 4'hf) + cin;
+            3: f = r | s;
+            4: f = r & s;
+            5: f = (~r) & s;
+            6: f = r ^ s;
+            7: f = ~(r ^ s);
+            default: f = 0;
+        endcase
 
         cout = f[4];
         fzero = 0;
@@ -89,41 +69,17 @@ module Am2901(input wire clock, input wire [3:0] din, input wire [3:0] aSel,
         writeQ = 0;
         writeRam = 0;
         fvalue = f[3:0];
-        if (aluDest == 0) begin
-            yout = fvalue;
-            qv = fvalue;
-            writeQ = 1;
-        end if (aluDest == 1) begin
-            yout = fvalue;
-        end if (aluDest == 2) begin
-            yout = a;
-            bv = fvalue;
-            writeRam = 1;
-        end if (aluDest == 3) begin
-            yout = fvalue;
-            bv = fvalue;
-            writeRam = 1;
-        end if (aluDest == 4) begin
-            yout = fvalue;
-            qv = q >> 1;
-            bv = fvalue >> 1;
-            writeRam = 1;
-            writeQ = 1;
-        end if (aluDest == 5) begin
-            yout = fvalue;
-            bv = fvalue >> 1;
-            writeRam = 1;
-        end if (aluDest == 6) begin
-            yout = fvalue;
-            qv = q << 1;
-            bv = fvalue << 1;
-            writeRam = 1;
-            writeQ = 1;
-        end if (aluDest == 7) begin
-            yout = fvalue;
-            bv = fvalue << 1;
-            writeRam = 1;
-        end
+
+        case (aluDest)
+            0: begin yout = fvalue; qv = fvalue; writeQ = 1; end
+            1: begin yout = fvalue; end
+            2: begin yout = a; bv = fvalue; writeRam = 1; end
+            3: begin yout = fvalue; bv = fvalue; writeRam = 1; end
+            4: begin yout = fvalue; qv = q >> 1; bv = fvalue >> 1; writeRam = 1; writeQ = 1; end
+            5: begin yout = fvalue; bv = fvalue >> 1; writeRam = 1; end
+            6: begin yout = fvalue; qv = q << 1; bv = fvalue << 1; writeRam = 1; writeQ = 1; end
+            7: begin yout = fvalue; bv = fvalue << 1; writeRam = 1; end
+        endcase
     end
 
     always @(posedge clock) begin

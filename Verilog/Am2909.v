@@ -35,19 +35,13 @@ module Am2909(input wire clock, input wire [3:0] din, input wire [3:0] rin, inpu
             end
         end
 
-        mux = 0;
-        if ((s1 == 0) && (s0 == 0)) begin
-            mux = pc;
-        end
-        if ((s1 == 0) && (s0 == 1)) begin
-            mux = ar;
-        end
-        if ((s1 == 1) && (s0 == 0)) begin
-            mux = stack[stackAddr];
-        end
-        if ((s1 == 1) && (s0 == 1)) begin
-            mux = din;
-        end
+        case ({s1, s0})
+            2'b00: mux = pc;
+            2'b01: mux = ar;
+            2'b10: mux = stack[stackAddr];
+            2'b11: mux = din;
+            default: mux = 0;
+        endcase
         if (zero == 0) begin
             yout = 0;
         end else begin
