@@ -11,7 +11,8 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
         for (i=0; i<16; i=i+1) test_instructions[i] = 1;
         test_instructions[2] = 8'h80;
         test_instructions[3] = 8'ha5;
-        test_instructions[4] = 8'h79;
+        test_instructions[4] = 8'ha1; // STAL
+        //test_instructions[4] = 8'h71; // JMP
         test_instructions[5] = 8'hab;
         test_instructions[6] = 8'hcd;
 
@@ -47,7 +48,7 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     reg [7:0] work_address_hi;
     reg [15:0] memory_address;
     reg [7:0] register_index;
-    reg [7:0] register_value;
+    reg [7:0] result_register;
     reg [7:0] swap_register;
 
     // Register RAM
@@ -257,7 +258,7 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
             work_address_hi <= 0;
             memory_address <= 0;
             register_index <= 0;
-            register_value <= 0;
+            result_register <= 0;
             swap_register <= 0;
         end else begin
             pipeline <= uc_rom_data;
@@ -273,14 +274,18 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
                 tip <= tip + 1;
             end
 
+            if (pc_increment) begin
+                memory_address <= memory_address + 1;
+            end
+
             // E6 decoder
             case (e6)
                 0: ;
-                1: register_value <= FBus;
+                1: result_register <= FBus;
                 2: register_index <= FBus; // uC bit 53 might simplify 16 bit register write
                 3: ; // load D9
                 4: ; // load page table base register
-                5: memory_address <= {work_address_hi, work_address_lo}; // load machine address register
+                5: memory_address <= {work_address_hi, work_address_lo};
                 6: ; // load AR on 2909, see above
                 7: ; // load condition code register M12
             endcase
@@ -291,27 +296,22 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
             end
             // k11.4 write RAM
             if (k11 == 4) begin
-                register_ram[register_index] <= register_value;
-                //$display("r[%d] = %02x", register_index, register_value);
-            end
-            if (k11 == 6) begin
-                if (e6 == 5) begin
-                    work_address_lo <= memory_address[7:0];
-                end else begin
-                    // Not exactly right, needs another condition?
-                    work_address_lo <= register_value;
-                end
+                register_ram[register_index] <= result_register;
+                //$display("r[%d] = %02x", register_index, result_register);
             end
             if (k11 == 7) begin
                 // might be a bus write, seems to be true
             end
-
+            if (k11 == 6) begin
+                work_address_lo <= result_register;
+                if (e6 == 5) begin
+                    work_address_lo <= memory_address[7:0];
+                end
+            end
             if (h11 == 3) begin
+                work_address_hi <= result_register;
                 if (e6 == 5) begin
                     work_address_hi <= memory_address[15:8];
-                end else begin
-                    // Not exactly right, needs another condition?
-                    work_address_hi <= register_value;
                 end
             end
             if (h11 == 6) begin
