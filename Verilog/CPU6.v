@@ -6,7 +6,7 @@
 `include "MapROM.v"
 
 module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
-    output wire writeEnBus, output wire [15:0] addressBus, output wire [7:0] dataOutBus);
+    output reg writeEnBus, output wire [15:0] addressBus, output wire [7:0] dataOutBus);
 
     integer i;
     initial begin
@@ -15,7 +15,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     end
 
     assign addressBus = memory_address;
-    assign writeEnBus = 0;
+    assign dataOutBus = result_register;
 
     /*
      * Instrumentation
@@ -280,19 +280,20 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 // enable F11 addressable latch, machine state, bus state
                 // A0-2 on F11 are B1-3 and D input is B0
             end
-            // k11.4 write RAM
+            // k11.4 write register RAM
             if (k11 == 4) begin
                 register_ram[register_index] <= result_register;
-                //$display("r[%d] = %02x", register_index, result_register);
-            end
-            if (k11 == 7) begin
-                // might be a bus write, seems to be true
             end
             if (k11 == 6) begin
                 work_address_lo <= result_register;
                 if (e6 == 5) begin
                     work_address_lo <= memory_address[7:0];
                 end
+            end
+            writeEnBus = 0;
+            // might be a bus write, seems to be true
+            if (k11 == 7) begin
+                writeEnBus = 1;
             end
             if (h11 == 3) begin
                 work_address_hi <= result_register;
