@@ -5,31 +5,23 @@
 `include "CodeROM.v"
 `include "MapROM.v"
 
-module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output reg [15:0] addressBus);
+module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
+    output wire writeEnBus, output wire [15:0] addressBus, output wire [7:0] dataOutBus);
+
     integer i;
     initial begin
-        for (i=0; i<16; i=i+1) test_instructions[i] = 1;
-        test_instructions[2] = 8'h80;
-        test_instructions[3] = 8'ha5;
-        test_instructions[4] = 8'ha1; // STAL
-        //test_instructions[4] = 8'h71; // JMP
-        test_instructions[5] = 8'hab;
-        test_instructions[6] = 8'hcd;
-
-        tip = 0;
         cycle_counter = 0;
-
         for (i=0; i<256; i=i+1) register_ram[i] = 8'hff;
     end
+
+    assign addressBus = memory_address;
+    assign writeEnBus = 0;
 
     /*
      * Instrumentation
      */
 
     wire instruction_start = uc_rom_address == 11'h101;
-    reg [7:0] test_instructions[0:15];
-    reg [3:0] tip;
-    wire [7:0] test_instruction = test_instructions[tip];
     reg [31:0] cycle_counter;
     wire [7:0] register0 = register_ram[0];
     wire [7:0] register1 = register_ram[1];
@@ -227,9 +219,7 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
         end else if (d2d3 == 9) begin
             // DPBus = 4 bits from DIP switches, other 4?
         end else if (d2d3 == 10) begin
-            DPBus = dataBus;
-            // force instruction for testing
-            DPBus = test_instruction;
+            DPBus = dataInBus;
         end else if (d2d3 == 11) begin
             // read ILR (interrupt level register?) H14 4 bits, A8 4 bits current level
         end else if (d2d3 == 12) begin
@@ -270,10 +260,6 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
                 cycle_counter <= cycle_counter + 1;
             end
             // PC increment
-            if (pc_increment == 1) begin
-                tip <= tip + 1;
-            end
-
             if (pc_increment) begin
                 memory_address <= memory_address + 1;
             end
