@@ -9,19 +9,16 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     integer i;
     initial begin
         for (i=0; i<16; i=i+1) test_instructions[i] = 1;
-        test_instructions[2] = 8'h81;
-        test_instructions[3] = 8'h82;
-        test_instructions[4] = 8'h83;
-        test_instructions[5] = 8'h80;
-        test_instructions[6] = 8'h81;
-        test_instructions[7] = 8'h20;
-        test_instructions[8] = 8'h07;
+        test_instructions[2] = 8'h80;
+        test_instructions[3] = 8'ha5;
+        test_instructions[4] = 8'h79;
+        test_instructions[5] = 8'hab;
+        test_instructions[6] = 8'hcd;
 
         tip = 0;
         cycle_counter = 0;
 
         for (i=0; i<256; i=i+1) register_ram[i] = 8'hff;
-        swap_register = 0;
     end
 
     /*
@@ -46,6 +43,15 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     reg [55:0] pipeline;
     // ALU flags register
     reg alu_zero;
+    reg [7:0] work_address_lo;
+    reg [7:0] work_address_hi;
+    reg [15:0] memory_address;
+    reg [7:0] register_index;
+    reg [7:0] register_value;
+    reg [7:0] swap_register;
+
+    // Register RAM
+    reg [7:0] register_ram[0:255];
 
     // 6309 ROM
     wire [7:0] map_rom_address = DPBus;
@@ -161,11 +167,6 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
     // Constant (immediate data)
     wire [7:0] constant = ~pipeline[16+7:16];
 
-    reg [7:0] register_ram[0:255];
-    reg [7:0] register_index;
-    reg [7:0] register_value;
-    reg [7:0] swap_register;
-
     // Internal Busses
     // Register RAM reads from FBus (not certain)
     // Register RAM writes to DPBus
@@ -249,66 +250,76 @@ module CPU6(input wire reset, input wire clock, inout wire [7:0] dataBus, output
 
     // Guideline #1: When modeling sequential logic, use nonblocking 
     //              assignments.
-    always @(posedge clock) begin
-        pipeline <= uc_rom_data;
-        alu_zero <= alu0_f0 & alu1_f0;
-        if (instruction_start == 1) begin
-            //$display("Opcode: 0x%02x, cycles: %5d", test_instruction, cycle_counter);
-            cycle_counter <= 1;
+    always @(posedge clock, posedge reset) begin
+        if (reset == 1) begin
+            alu_zero <= 0;
+            work_address_lo <= 0;
+            work_address_hi <= 0;
+            memory_address <= 0;
+            register_index <= 0;
+            register_value <= 0;
+            swap_register <= 0;
         end else begin
-            cycle_counter <= cycle_counter + 1;
-        end
-        // PC increment
-        if (pc_increment == 1) begin
-            tip <= tip + 1;
-        end
-        // e6.1 register value
-        if (e6 == 1) begin
-            register_value <= FBus;
-        end
-        // e6.2 register index
-        // uC bit 53 might simplify 16 bit register write
-        if (e6 == 2) begin
-            register_index <= FBus;
-        end
-        if (e6 == 3) begin
-            // load D9
-        end
-        if (e6 == 4) begin
-            // load page table base register
-        end
-        if (e6 == 5) begin
-            // load machine address register
-        end
-        if (e6 == 6) begin
-            // load AR on 2909, see above
-        end
-        if (e6 == 7) begin
-            // load condition code register M12
-        end
-        if (k11 == 3) begin
-            // enable F11 addressable latch, machine state, bus state
-            // A0-2 on F11 are B1-3 and D input is B0
-        end
-        // k11.4 write RAM
-        if (k11 == 4) begin
-            register_ram[register_index] <= register_value;
-            //$display("r[%d] = %02x", register_index, register_value);
-        end
-        if (k11 == 6) begin
-            // address work register lo byte
-        end
-        if (k11 == 7) begin
-            // might be a bus write
-        end
-        if (h11 == 3) begin
-            // load work address register hi
-        end
-        if (h11 == 6) begin
-            // see above
-        end
-        if (e7 == 2) begin
-            // save condition codes from ALU to J9
+            pipeline <= uc_rom_data;
+            alu_zero <= alu0_f0 & alu1_f0;
+            if (instruction_start == 1) begin
+                //$display("Opcode: 0x%02x, cycles: %5d", test_instruction, cycle_counter);
+                cycle_counter <= 1;
+            end else begin
+                cycle_counter <= cycle_counter + 1;
+            end
+            // PC increment
+            if (pc_increment == 1) begin
+                tip <= tip + 1;
+            end
+
+            // E6 decoder
+            case (e6)
+                0: ;
+                1: register_value <= FBus;
+                2: register_index <= FBus; // uC bit 53 might simplify 16 bit register write
+                3: ; // load D9
+                4: ; // load page table base register
+                5: memory_address <= {work_address_hi, work_address_lo}; // load machine address register
+                6: ; // load AR on 2909, see above
+                7: ; // load condition code register M12
+            endcase
+
+            if (k11 == 3) begin
+                // enable F11 addressable latch, machine state, bus state
+                // A0-2 on F11 are B1-3 and D input is B0
+            end
+            // k11.4 write RAM
+            if (k11 == 4) begin
+                register_ram[register_index] <= register_value;
+                //$display("r[%d] = %02x", register_index, register_value);
+            end
+            if (k11 == 6) begin
+                if (e6 == 5) begin
+                    work_address_lo <= memory_address[7:0];
+                end else begin
+                    // Not exactly right, needs another condition?
+                    work_address_lo <= register_value;
+                end
+            end
+            if (k11 == 7) begin
+                // might be a bus write, seems to be true
+            end
+
+            if (h11 == 3) begin
+                if (e6 == 5) begin
+                    work_address_hi <= memory_address[15:8];
+                end else begin
+                    // Not exactly right, needs another condition?
+                    work_address_hi <= register_value;
+                end
+            end
+            if (h11 == 6) begin
+                // see above
+            end
+            if (e7 == 2) begin
+                // save condition codes from ALU to J9
+            end
         end
     end
 endmodule
