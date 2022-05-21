@@ -4,10 +4,12 @@ module Memory(input wire clock, input wire [15:0] address, input wire write_en, 
 
     integer i;
     initial begin
-        for (i=0; i<65536; i=i+1) ram_cells[i] = 8'hff;
+        for (i=0; i<65536; i=i+1) ram_cells[i] = 8'h01; // All NOP
 
         // Boot!
         i = 16'hff00;
+        ram_cells[i] = 8'h01; i = i+1; // NOP
+
         ram_cells[i] = 8'h01; i = i+1; // NOP
 
         ram_cells[i] = 8'h80; i = i+1; // LDAL #01
@@ -16,6 +18,10 @@ module Memory(input wire clock, input wire [15:0] address, input wire write_en, 
         ram_cells[i] = 8'h01; i = i+1; // NOP
         ram_cells[i] = 8'h20; i = i+1; // INR
         ram_cells[i] = 8'h00; i = i+1;
+
+        //ram_cells[i] = 8'h71; i = i+1; // JMP
+        //ram_cells[i] = 8'hff; i = i+1;
+        //ram_cells[i] = 8'h05; i = i+1;
 
         // Hellorld!
         ram_cells[i] = 8'h80; i = i+1; // LDAL #48 (H)
@@ -97,9 +103,14 @@ module Memory(input wire clock, input wire [15:0] address, input wire write_en, 
         ram_cells[i] = 8'h5a; i = i+1;
         ram_cells[i] = 8'h00; i = i+1;
 
-        ram_cells[i] = 8'h71; i = i+1; // JMP
-        ram_cells[i] = 8'hff; i = i+1;
-        ram_cells[i] = 8'h03; i = i+1;
+        //ram_cells[i] = 8'h00; i = i+1; // HLT
+
+        ram_cells[i] = 8'h80; i = i+1; // LDAL #0a (\n)
+        ram_cells[i] = 8'h5a; i = i+1;
+
+        ram_cells[i] = 8'ha1; i = i+1; // STAL
+        ram_cells[i] = 8'h5b; i = i+1;
+        ram_cells[i] = 8'h00; i = i+1;
     end
 
     reg [7:0] ram_cells[0:65535];
@@ -111,6 +122,11 @@ module Memory(input wire clock, input wire [15:0] address, input wire write_en, 
             ram_cells[address] <= data_in;
             // Pretend there's a UART here :-)
             if (address == 16'h5a00) $write("%s", data_in);
+            // A hack to stop simulation
+            if (address == 16'h5b00 && data_in == 8'h5a) begin
+                $display("Simulation terminated by user request.");
+                $finish;
+            end
         end
     end
 endmodule

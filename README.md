@@ -24,6 +24,10 @@ Below is a sample microcode execution trace. The marker shows the beginning of t
 
 ![DCX Instruction](images/NOP_DLY.png "DCX Instruction Execution")
 
+Below is the CPU data path with enables for busses and registers. The enables are controlled by the microcode word at the output of the pipeline register.
+
+![Data path](images/Datapath.png "Data path")
+
 ### Links
 
  * [Schematics](https://github.com/Meisaka/CenMiniCom)

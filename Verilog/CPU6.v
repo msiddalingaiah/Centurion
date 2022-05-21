@@ -42,6 +42,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     reg [7:0] register_index;
     reg [7:0] result_register;
     reg [7:0] swap_register;
+    // This may or may not exist in hardware, but it solves a problem with instructions after JMP
+    reg enable_pc_incr;
 
     // Register RAM
     reg [7:0] register_ram[0:255];
@@ -232,9 +234,9 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
         end
 
         pc_increment = 0;
-        // Both seem to work sometimes, h11 == 5 seems to be the best
-        // if (h11 == 1) begin // not so good
-        if (h11 == 5) begin // good!
+        //if (h11 == 1) begin // no good
+        //if (h11 == 6) begin // no good!
+        if (h11 == 5 && enable_pc_incr) begin // this seems to work, seems complicated
             pc_increment = 1;
         end
     end
@@ -250,11 +252,11 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             register_index <= 0;
             result_register <= 0;
             swap_register <= 0;
+            enable_pc_incr <= 0;
         end else begin
             pipeline <= uc_rom_data;
             alu_zero <= alu0_f0 & alu1_f0;
             if (instruction_start == 1) begin
-                //$display("Opcode: 0x%02x, cycles: %5d", test_instruction, cycle_counter);
                 cycle_counter <= 1;
             end else begin
                 cycle_counter <= cycle_counter + 1;
@@ -271,7 +273,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 2: register_index <= FBus; // uC bit 53 might simplify 16 bit register write
                 3: ; // load D9
                 4: ; // load page table base register
-                5: memory_address <= {work_address_hi, work_address_lo};
+                5: begin memory_address <= {work_address_hi, work_address_lo}; enable_pc_incr <= !enable_pc_incr; end
                 6: ; // load AR on 2909, see above
                 7: ; // load condition code register M12
             endcase
@@ -300,6 +302,9 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 if (e6 == 5) begin
                     work_address_hi <= memory_address[15:8];
                 end
+            end
+            if (h11 == 5) begin
+                enable_pc_incr <= 1;
             end
             if (h11 == 6) begin
                 // see above
