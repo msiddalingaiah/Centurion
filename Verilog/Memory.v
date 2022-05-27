@@ -4,10 +4,10 @@ module Memory(input wire clock, input wire [15:0] address, input wire write_en, 
 
     integer i;
     initial begin
-        for (i=0; i<65536; i=i+1) ram_cells[i] = 8'h01; // All NOP
+        for (i=0; i<256; i=i+1) ram_cells[i] = 8'h01; // All NOP
 
         // Boot!
-        i = 16'hff00;
+        i = 8'h00;
         ram_cells[i] = 8'h01; i = i+1; // NOP
 
         ram_cells[i] = 8'h01; i = i+1; // NOP
@@ -113,20 +113,14 @@ module Memory(input wire clock, input wire [15:0] address, input wire write_en, 
         ram_cells[i] = 8'h00; i = i+1;
     end
 
-    reg [7:0] ram_cells[0:65535];
+    reg [7:0] ram_cells[0:255];
 
-    assign data_out = ram_cells[address]; 
+    wire [7:0] mapped_address = address[7:0];
+    assign data_out = ram_cells[mapped_address]; 
 
     always @(posedge clock) begin
         if (write_en == 1) begin
-            ram_cells[address] <= data_in;
-            // Pretend there's a UART here :-)
-            if (address == 16'h5a00) $write("%s", data_in);
-            // A hack to stop simulation
-            if (address == 16'h5b00 && data_in == 8'h5a) begin
-                $display("Simulation terminated by user request.");
-                $finish;
-            end
+            ram_cells[mapped_address] <= data_in;
         end
     end
 endmodule

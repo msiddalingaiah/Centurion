@@ -26,6 +26,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     wire [7:0] register0 = register_ram[0];
     wire [7:0] register1 = register_ram[1];
     reg pc_increment;
+    wire read_enable = h11 == 5;
 
     /*
      * Rising edge triggered registers
@@ -295,7 +296,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             writeEnBus = 0;
             // might be a bus write, seems to be true
             if (k11 == 7) begin
-                writeEnBus = 1;
+                writeEnBus <= 1;
             end
             if (h11 == 3) begin
                 work_address_hi <= result_register;
