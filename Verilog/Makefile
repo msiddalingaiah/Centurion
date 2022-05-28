@@ -35,7 +35,13 @@ sudo-prog: $(PROJ).bin
 	@echo 'Executing prog as root!!!'
 	sudo iCEburn -e -v -w  $<
 
+test: CPU6TestBench
+	vvp CPU6TestBench
+
+CPU6TestBench: *.v
+	iverilog -o CPU6TestBench CPU6TestBench.v
+
 clean:
-	rm $(PROJ).json $(PROJ).asc $(PROJ).bin $(PROJ).rpt
+	rm $(PROJ).json $(PROJ).asc $(PROJ).bin $(PROJ).rpt CPU6TestBench
 
 .PHONY: all prog clean
