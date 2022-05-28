@@ -6,3 +6,5 @@ vcd/
 *.vcd
 
 CPU6TestBench
+*.bin
+*.rpt

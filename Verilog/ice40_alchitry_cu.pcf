@@ -1,0 +1,77 @@
+
+# Alchitry CU
+
+# Clock
+set_io clock P7
+
+# Onboard LEDs
+set_io LED1 J11
+set_io LED2 K11
+set_io LED3 K12
+set_io LED4 K14
+set_io LED5 L12
+set_io LED6 L14
+set_io LED7 M12
+set_io LED8 N14
+
+# Reset
+set_io RESETBTN P8
+
+
+## Alchitry IO
+
+# LEDs, right-to-left
+set_io IO_LED1 G14 # BB21, IOR_141_GBIN2
+set_io IO_LED2 F14 # BB20, IOR_140_GBIN3
+set_io IO_LED3 E12 # BB18, IOR_147
+set_io IO_LED4 E14 # BB17, IOR_148
+set_io IO_LED5 D14 # BB15, IOR_152
+set_io IO_LED6 C14 # BB14, IOR_154
+set_io IO_LED7 B14 # BB12, IOR_161
+set_io IO_LED8 A12 # BB11, IOT_170
+
+set_io IO_LED9 C10 # BB9, IOT_186
+set_io IO_LED10 C9 # BB8, IOT_190
+set_io IO_LED11 A11 # BB6, IOT_179
+set_io IO_LED12 A10 # BB5, IOT_181
+set_io IO_LED13 A7 # BB3, IOT_197_GBIN1
+set_io IO_LED14 A6 # BB2, IOT_198_GBIN0
+set_io IO_LED15 A4 # AB24, IOT_219
+set_io IO_LED16 A3 # AB23, IOT_222
+
+set_io IO_LED17 A2 # AB21, IOT_223
+set_io IO_LED18 A1 # AB20, IOT_225
+set_io IO_LED19 C3 # AB18, IOL_4_P
+set_io IO_LED20 D3 # AB17, IOL_4_N
+set_io IO_LED21 B1 # AB15, IOL_2_P
+set_io IO_LED22 C1 # AB14, IOL_2_N
+set_io IO_LED23 D1 # AB12, IOL_5_P
+set_io IO_LED24 E1 # AB11, IOL_5_N
+
+# DIP Switches
+# set_io DIP1 C11 # BB40, IOT_174
+# set_io DIP2 C11 # BB39, IOT_174
+# set_io DIP3 C11 # BB37, IOT_174
+# set_io DIP4 C11 # BB36, IOT_174
+# set_io DIP5 C11 # BB34, IOT_174
+# set_io DIP6 C11 # BB33, IOT_174
+# set_io DIP7 C11 # BB31, IOT_174
+# set_io DIP8 C11 # BB30, IOT_174
+#
+# set_io DIP9 C11 # AB28, IOT_174
+# set_io DIP10 C11 # AB27, IOT_174
+# set_io DIP11 C11 # BB49, IOT_174
+# set_io DIP12 C11 # BB48, IOT_174
+# set_io DIP13 C11 # BB46, IOT_174
+# set_io DIP14 C11 # BB45, IOT_174
+# set_io DIP15 C11 # BB43, IOT_174
+# set_io DIP16 C11 # BB42, IOT_174
+#
+# set_io DIP17 C11 # AB40, IOT_174
+# set_io DIP18 C11 # AB39, IOT_174
+# set_io DIP19 C11 # AB37, IOT_174
+# set_io DIP20 C11 # AB36, IOT_174
+# set_io DIP21 C11 # AB34, IOT_174
+# set_io DIP22 C11 # AB33, IOT_174
+# set_io DIP23 C11 # AB31, IOT_174
+# set_io DIP24 C11 # AB30, IOT_174
