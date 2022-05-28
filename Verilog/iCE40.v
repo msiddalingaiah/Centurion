@@ -1,5 +1,5 @@
 
-`include "iCECPU6.v"
+`include "CPU6.v"
 `include "Memory.v"
 `include "LEDPanel.v"
 
@@ -23,7 +23,7 @@ CodeROM reg [55:0] memory[0:2047]
 reg [7:0] register_ram[0:15]
 reg [7:0] ram_cells[0:255];
 Info: Device utilisation:
-Info:            ICESTORM_LC:  5281/ 7680    68%
+Info:            ICESTORM_LC:  5281/ 7680    68% (1154/ 7680 15% without Memory module)
 Info:           ICESTORM_RAM:    27/   32    84%
 Info:                  SB_IO:     5/  256     1%
 Info:                  SB_GB:     4/    8    50%
@@ -46,7 +46,7 @@ module iCE40(input clock, output LED2, output LED3, output LED4, output LED5);
     wire [7:0] leds;
     Memory ram(clock, addressBus, writeEnBus, data_c2r, data_r2c);
     LEDPanel panel(clock, addressBus, writeEnBus, data_c2r, data_r2c, leds);
-    iCECPU6 cpu (reset, clock, data_r2c, writeEnBus, addressBus, data_c2r);
+    CPU6 cpu (reset, clock, data_r2c, writeEnBus, addressBus, data_c2r);
 
 	always @ (posedge clock) begin
 		if (reset == 1) begin
