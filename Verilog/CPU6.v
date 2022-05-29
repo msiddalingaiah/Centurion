@@ -34,7 +34,6 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     // Pipeline register
     reg [55:0] pipeline;
     // ALU flags register
-    reg alu_zero;
     reg [7:0] work_address_lo;
     reg [7:0] work_address_hi;
     reg [15:0] memory_address;
@@ -194,7 +193,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             alu0_cin = 1;
         end else if (shift_carry == 2) begin
             // really comes from j9, see pipeline[15] above
-            alu0_cin = ~alu_zero;
+            alu0_cin = ~flags_register[0];
         end else if (shift_carry == 3) begin
             alu0_cin = 0;
         end
@@ -258,7 +257,6 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     //              assignments.
     always @(posedge clock, posedge reset) begin
         if (reset == 1) begin
-            alu_zero <= 0;
             work_address_lo <= 0;
             work_address_hi <= 0;
             memory_address <= 0;
@@ -270,7 +268,6 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             flags_register <= 0;
         end else begin
             pipeline <= uc_rom_data;
-            alu_zero <= alu0_f0 & alu1_f0;
             if (instruction_start == 1) begin
                 cycle_counter <= 1;
             end else begin
