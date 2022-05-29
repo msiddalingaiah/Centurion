@@ -228,11 +228,11 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
         end else if (d2d3 == 1) begin
             DPBus = register_ram[register_index];
         end else if (d2d3 == 2) begin
-            // DPBus = address hi, high nibble inverted, this and the next one break simulation!!
-            //DPBus <= { ~memory_address[15:12], memory_address[11:8] };
+            // DPBus = address hi, high nibble inverted
+            DPBus = { ~memory_address[15:12], memory_address[11:8] };
         end else if (d2d3 == 3) begin
             // DPBus = address lo
-            //DPBus <= memory_address[7:0];
+            DPBus = memory_address[7:0];
         end else if (d2d3 == 8) begin
             // DPBus = translated address hi, 17:11 (17 down), and top 3 bits together
         end else if (d2d3 == 9) begin

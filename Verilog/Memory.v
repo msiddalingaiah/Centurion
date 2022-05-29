@@ -12,6 +12,8 @@ module Memory(input wire clock, input wire [15:0] address, input wire write_en, 
 
         ram_cells[i] = 8'h01; i = i+1; // NOP
 
+        //ram_cells[i] = 8'h0e; i = i+1; // DLY
+
         ram_cells[i] = 8'h80; i = i+1; // LDAL #fd
         ram_cells[i] = 8'hff; i = i+1;
 
