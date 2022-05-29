@@ -12,6 +12,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     initial begin
         cycle_counter = 0;
         for (i=0; i<16; i=i+1) register_ram[i] = 8'hff;
+        for (i=0; i<2048; i=i+1) ucode_used[i] = 0;
     end
 
     assign addressBus = memory_address;
@@ -27,13 +28,12 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     wire [7:0] register1 = register_ram[1];
     reg pc_increment;
     wire read_enable = h11 == 5;
+    reg ucode_used[0:2047];
 
     /*
      * Rising edge triggered registers
      */
     // Pipeline register
-    // if bit 15 = 1 updates zero bit in J9 so lo and high byte are consistent, reset if bit 15 = 0
-    // e.g. propagate zero from low byte to higher bytes when pipeline[15] is 1
     reg [55:0] pipeline;
     // ALU flags register
     reg alu_zero;
@@ -43,6 +43,9 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     reg [7:0] register_index;
     reg [7:0] result_register;
     reg [7:0] swap_register;
+    reg [7:0] flags_register;
+    reg [3:0] condition_codes; // M12
+
     // This may or may not exist in hardware, but it solves a problem with instructions after JMP
     reg enable_pc_incr;
 
@@ -61,7 +64,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
 
 
     // Sequencer shared nets
-    wire seq_fe = pipeline[27];
+
+    wire seq_fe = pipeline[27] & jsr_;
     wire seq_pup = pipeline[28];
     wire seq_zero = !reset;
 
@@ -73,8 +77,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     wire [3:0] seq0_din = pipeline[19:16];
     wire [3:0] seq0_rin = FBus[3:0];
     reg [3:0] seq0_orin;
-    wire seq0_s0 = ~pipeline[29];
-    wire seq0_s1 = ~pipeline[30];
+    wire seq0_s0 = ~(pipeline[29] & jsr_);
+    wire seq0_s1 = ~(pipeline[30] & jsr_);
     wire seq0_cin = 1;
     reg seq0_re;
     wire [3:0] seq0_yout;
@@ -86,12 +90,15 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     // Case control
     wire case_ = pipeline[33];
 
+    // Microcode conditional subroutine calls
+    reg jsr_;
+
     // Sequencer 1 (microcode address bits 7:4)
     wire [3:0] seq1_din = pipeline[23:20];
     wire [3:0] seq1_rin = FBus[7:4];
     reg [3:0] seq1_orin;
-    wire seq1_s0 = ~pipeline[31];
-    reg seq1_s1;
+    wire seq1_s0 = ~(pipeline[31] & jsr_);
+    wire seq1_s1 = ~(~(pipeline[54] & ~pipeline[32]) & jsr_);
     wire seq1_cin = seq0_cout;
     reg seq1_re;
     wire [3:0] seq1_yout;
@@ -104,8 +111,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     // Sequencer 2 (microcode address bits 10:8)
     wire [3:0] seq2_din = pipeline[26:24];
     wire [3:0] seq2_rin;
-    wire seq2_s0 = ~pipeline[31];
-    wire seq2_s1 = ~pipeline[32];
+    wire seq2_s0 = ~(pipeline[31] & jsr_);
+    wire seq2_s1 = ~(pipeline[32] & jsr_);
     wire seq2_cin = seq1_cout;
     wire seq2_re = 1;
     wire [3:0] seq2_yout;
@@ -159,6 +166,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     wire [2:0] k11 = pipeline[9:7];
     wire [2:0] e6 = pipeline[6:4];
     wire [1:0] j13 = pipeline[5:4];
+    wire [2:0] k9 = pipeline[18:16];
+    wire [1:0] j12 = pipeline[17:16];
 
     // Constant (immediate data)
     wire [7:0] constant = ~pipeline[16+7:16];
@@ -173,6 +182,13 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     // Guideline #3: When modeling combinational logic with an "always" 
     //              block, use blocking assignments.
     always @(*) begin
+        jsr_ = 1;
+        if (pipeline[15] == 0) begin
+            case (k9)
+                2: jsr_ = ~register_index[0];
+            endcase
+        end
+
         alu0_cin = 0;
         if (shift_carry == 0) begin
             alu0_cin = 0;
@@ -188,15 +204,11 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
         seq0_orin = 0;
         if (case_ == 0) begin
             if (j13 == 0) begin
-                seq0_orin[1] = alu_zero;
+                seq0_orin[0] = flags_register[1];
+                seq0_orin[1] = flags_register[0];
             end
         end
         seq1_orin = 0;
-        if (pipeline[54] == 0) begin
-            seq1_s1 = 0;
-        end else begin
-            seq1_s1 = ~pipeline[32];
-        end
 
         seq0_re = 1;
         seq1_re = 1;
@@ -220,7 +232,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
         end else if (d2d3 == 8) begin
             // DPBus = translated address hi, 17:11 (17 down), and top 3 bits together
         end else if (d2d3 == 9) begin
-            // DPBus = 4 bits from DIP switches, other 4?
+            // low nibble is sense switches
+            DPBus = { condition_codes[3:0], 4'b0000 };
         end else if (d2d3 == 10) begin
             DPBus = dataInBus;
         end else if (d2d3 == 11) begin
@@ -255,6 +268,10 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             swap_register <= 0;
             enable_pc_incr <= 0;
         end else begin
+            if (ucode_used[uc_rom_address] == 0) begin
+                //$display("%03x", uc_rom_address);
+                ucode_used[uc_rom_address] <= 1;
+            end
             pipeline <= uc_rom_data;
             alu_zero <= alu0_f0 & alu1_f0;
             if (instruction_start == 1) begin
@@ -276,7 +293,17 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 4: ; // load page table base register
                 5: begin memory_address <= {work_address_hi, work_address_lo}; enable_pc_incr <= !enable_pc_incr; end
                 6: ; // load AR on 2909, see above
-                7: ; // load condition code register M12
+                7: // load condition code register M12
+                    begin
+                        // based on table in wiki (j12), condition codes in instructions wiki
+                        case (j12)
+                            0: begin condition_codes[3] <= condition_codes[0]; condition_codes[2] <= condition_codes[1]; end
+                            1: begin condition_codes[3] <= flags_register[0]; condition_codes[2] <= flags_register[1]; end
+                            2: condition_codes <= result_register[3:0]; // Not sure
+                            3: begin condition_codes[3] <= flags_register[5] & flags_register[0]; condition_codes[2] <= flags_register[1]; end
+                            default: ;
+                        endcase
+                    end
             endcase
 
             if (k11 == 3) begin
@@ -312,6 +339,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             end
             if (e7 == 2) begin
                 // save condition codes from ALU to J9
+                flags_register <= { 1'b0, 1'b0, flags_register[0], alu0_cout, alu1_cout, alu1_ovr, alu1_f3, alu0_f0 & alu1_f0 };
             end
         end
     end
