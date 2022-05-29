@@ -11,7 +11,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     integer i;
     initial begin
         cycle_counter = 0;
-        for (i=0; i<16; i=i+1) register_ram[i] = 8'hff;
+        for (i=0; i<64; i=i+1) register_ram[i] = 8'hff;
     end
 
     assign addressBus = memory_address;
@@ -46,8 +46,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     // This may or may not exist in hardware, but it solves a problem with instructions after JMP
     reg enable_pc_incr;
 
-    // Register RAM, limit to 16 bytes to reduce iCE40 resource requirements
-    reg [7:0] register_ram[0:15];
+    // Register RAM, limit to 64 bytes to reduce iCE40 resource requirements
+    reg [7:0] register_ram[0:63];
 
     // 6309 ROM
     wire [7:0] map_rom_address = DPBus;
@@ -256,7 +256,6 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     // Guideline #1: When modeling sequential logic, use nonblocking 
     //              assignments.
     always @(posedge clock, posedge reset) begin
-        pipeline <= uc_rom_data;
         if (reset == 1) begin
             work_address_lo <= 0;
             work_address_hi <= 0;
@@ -268,7 +267,9 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             condition_codes <= 0;
             flags_register <= 0;
             writeEnBus <= 0;
+            pipeline <= 56'h42abc618b781c0; // First microcode word. Synth prefers it this way.
         end else begin
+            pipeline <= uc_rom_data;
             if (instruction_start == 1) begin
                 cycle_counter <= 1;
             end else begin
@@ -283,7 +284,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             case (e6)
                 0: ;
                 1: result_register <= FBus;
-                2: register_index <= FBus; // uC bit 53 might simplify 16 bit register write
+                2: register_index <= FBus & 8'h3f; // Limit to 64 regs for iCE40, uC bit 53 might simplify 16 bit register write
                 3: ; // load D9
                 4: ; // load page table base register
                 5: begin memory_address <= {work_address_hi, work_address_lo}; enable_pc_incr <= !enable_pc_incr; end
