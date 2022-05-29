@@ -12,7 +12,6 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     initial begin
         cycle_counter = 0;
         for (i=0; i<16; i=i+1) register_ram[i] = 8'hff;
-        for (i=0; i<2048; i=i+1) ucode_used[i] = 0;
     end
 
     assign addressBus = memory_address;
@@ -28,7 +27,6 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     wire [7:0] register1 = register_ram[1];
     reg pc_increment;
     wire read_enable = h11 == 5;
-    reg ucode_used[0:2047];
 
     /*
      * Rising edge triggered registers
@@ -271,10 +269,6 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             condition_codes <= 0;
             flags_register <= 0;
         end else begin
-            if (ucode_used[uc_rom_address] == 0) begin
-                //$display("%03x", uc_rom_address);
-                ucode_used[uc_rom_address] <= 1;
-            end
             pipeline <= uc_rom_data;
             alu_zero <= alu0_f0 & alu1_f0;
             if (instruction_start == 1) begin
