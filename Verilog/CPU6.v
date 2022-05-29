@@ -219,7 +219,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
 
         case (d2d3)
             0: DPBus = swap_register;
-            1: DPBus = register_ram[register_index];
+            1: DPBus = register_ram[register_index & 8'h3f]; // Limit to 64 regs for iCE40
             2: DPBus = { ~memory_address[15:12], memory_address[11:8] };
             3: DPBus = memory_address[7:0];
             4: ;
@@ -284,7 +284,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             case (e6)
                 0: ;
                 1: result_register <= FBus;
-                2: register_index <= FBus & 8'h3f; // Limit to 64 regs for iCE40, uC bit 53 might simplify 16 bit register write
+                2: register_index <= FBus; // uC bit 53 might simplify 16 bit register write
                 3: ; // load D9
                 4: ; // load page table base register
                 5: begin memory_address <= {work_address_hi, work_address_lo}; enable_pc_incr <= !enable_pc_incr; end
@@ -308,7 +308,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             end
             // k11.4 write register RAM
             if (k11 == 4) begin
-                register_ram[register_index] <= result_register;
+                register_ram[register_index & 8'h3f] <= result_register; // Limit to 64 byte of register_ram
             end
             if (k11 == 6) begin
                 work_address_lo <= result_register;

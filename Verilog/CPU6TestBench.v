@@ -18,6 +18,7 @@ module CPU6TestBench;
         wait(sim_end == 1);
         // $readmemh("programs/sjs_4700.txt", ram.ram_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
+        // #200000 $finish;
         $display("All done!");
         $finish;
     end
