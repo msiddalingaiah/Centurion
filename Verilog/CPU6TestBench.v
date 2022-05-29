@@ -6,17 +6,36 @@
 
 module CPU6TestBench;
     initial begin
-        $dumpfile("vcd/CPUTestBench.vcd"); 
+        $dumpfile("vcd/CPUTestBench.vcd");
         $dumpvars(0, CPU6TestBench);
-        #500000 $finish;
+        $write("hellorld: ");
+        $readmemh("programs/hellorld.txt", ram.ram_cells);
+        sim_end = 0;
+        #0 reset = 0;
+        #50 reset = 1;
+        #200 reset = 0;
+        wait(sim_end == 1);
+        $write("bnz_test: ");
+        $readmemh("programs/bnz_test.txt", ram.ram_cells);
+        sim_end = 0;
+        #0 reset = 0;
+        #50 reset = 1;
+        #200 reset = 0;
+        wait(sim_end == 1);
+        $display("All done!");
+        $finish;
     end
 
-    wire clock, reset, writeEnBus;
+    reg [8*64:1] ramfile;
+    wire writeEnBus;
     wire [7:0] data_c2r, data_r2c;
     wire [15:0] addressBus;
-    Clock cg0 (reset, clock);
+    wire clock;
+    Clock cg0 (clock);
     Memory ram(clock, addressBus, writeEnBus, data_c2r, data_r2c);
+    reg reset;
     CPU6 cpu (reset, clock, data_r2c, writeEnBus, addressBus, data_c2r);
+    reg sim_end;
 
     always @(posedge clock) begin
         if (writeEnBus == 1) begin
@@ -24,8 +43,7 @@ module CPU6TestBench;
             if (addressBus == 16'h5a00) $write("%s", data_c2r);
             // A hack to stop simulation
             if (addressBus == 16'h5b00 && data_c2r == 8'h5a) begin
-                $display("Simulation terminated by user request.");
-                $finish;
+                sim_end <= 1;
             end
         end
     end

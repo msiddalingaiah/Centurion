@@ -256,6 +256,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     // Guideline #1: When modeling sequential logic, use nonblocking 
     //              assignments.
     always @(posedge clock, posedge reset) begin
+        pipeline <= uc_rom_data;
         if (reset == 1) begin
             work_address_lo <= 0;
             work_address_hi <= 0;
@@ -266,8 +267,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             enable_pc_incr <= 0;
             condition_codes <= 0;
             flags_register <= 0;
+            writeEnBus <= 0;
         end else begin
-            pipeline <= uc_rom_data;
             if (instruction_start == 1) begin
                 cycle_counter <= 1;
             end else begin
