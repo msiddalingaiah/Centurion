@@ -228,12 +228,16 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
         end else if (d2d3 == 1) begin
             DPBus = register_ram[register_index];
         end else if (d2d3 == 2) begin
-            // DPBus = address hi, high nibble inverted
+            // DPBus = address hi, high nibble inverted, this and the next one break simulation!!
+            //DPBus <= { ~memory_address[15:12], memory_address[11:8] };
+        end else if (d2d3 == 3) begin
+            // DPBus = address lo
+            //DPBus <= memory_address[7:0];
         end else if (d2d3 == 8) begin
             // DPBus = translated address hi, 17:11 (17 down), and top 3 bits together
         end else if (d2d3 == 9) begin
             // low nibble is sense switches
-            DPBus = { condition_codes[3:0], 4'b0000 };
+            DPBus = { ~condition_codes[3:0], 4'b0000 };
         end else if (d2d3 == 10) begin
             DPBus = dataInBus;
         end else if (d2d3 == 11) begin
@@ -253,6 +257,9 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
         if (h11 == 5 && enable_pc_incr) begin // this seems to work, seems complicated
             pc_increment = 1;
         end
+        // if (d2d3 == 10 || k11 == 7) begin
+        //     pc_increment = 1;
+        // end
     end
 
     // Guideline #1: When modeling sequential logic, use nonblocking 
@@ -267,6 +274,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             result_register <= 0;
             swap_register <= 0;
             enable_pc_incr <= 0;
+            condition_codes <= 0;
+            flags_register <= 0;
         end else begin
             if (ucode_used[uc_rom_address] == 0) begin
                 //$display("%03x", uc_rom_address);
