@@ -219,34 +219,28 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
 
         // Datapath muxes
         DPBus = 0;
-        FBus = 0;
 
-        if (d2d3 == 13) begin
-            DPBus = constant;
-        end else if (d2d3 == 0) begin
-            DPBus = swap_register;
-        end else if (d2d3 == 1) begin
-            DPBus = register_ram[register_index];
-        end else if (d2d3 == 2) begin
-            // DPBus = address hi, high nibble inverted
-            DPBus = { ~memory_address[15:12], memory_address[11:8] };
-        end else if (d2d3 == 3) begin
-            // DPBus = address lo
-            DPBus = memory_address[7:0];
-        end else if (d2d3 == 8) begin
-            // DPBus = translated address hi, 17:11 (17 down), and top 3 bits together
-        end else if (d2d3 == 9) begin
-            // low nibble is sense switches
-            DPBus = { ~condition_codes[3:0], 4'b0000 };
-        end else if (d2d3 == 10) begin
-            DPBus = dataInBus;
-        end else if (d2d3 == 11) begin
-            // read ILR (interrupt level register?) H14 4 bits, A8 4 bits current level
-        end else if (d2d3 == 12) begin
-            // read switch 2 other half of dip switches and condition codes?
-        end
+        case (d2d3)
+            0: DPBus = swap_register;
+            1: DPBus = register_ram[register_index];
+            2: DPBus = { ~memory_address[15:12], memory_address[11:8] };
+            3: DPBus = memory_address[7:0];
+            4: ;
+            5: ;
+            6: ;
+            7: ;
+            8: ; // DPBus = translated address hi, 17:11 (17 down), and top 3 bits together
+            9: DPBus = { ~condition_codes[3:0], 4'b0000 }; // low nibble is sense switches
+            10: DPBus = dataInBus;
+            11: ; // read ILR (interrupt level register?) H14 4 bits, A8 4 bits current level
+            12: ; // read switch 2 other half of dip switches and condition codes?
+            13: DPBus = constant;
+            14: ;
+            15: ;
+        endcase
 
         FBus = { alu1_yout, alu0_yout };
+
         if (h11 == 6) begin
             FBus = map_rom_data;
         end

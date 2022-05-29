@@ -21,12 +21,12 @@ module Memory(input wire clock, input wire [15:0] address, input wire write_en, 
         ram_cells[i] = 8'h20; i = i+1; // INR
         ram_cells[i] = 8'h00; i = i+1;
 
-        ram_cells[i] = 8'h15; i = i+1;
-        ram_cells[i] = 8'hfa; i = i+1;
+        ram_cells[i] = 8'h15; i = i+1; // BNZ
+        ram_cells[i] = 8'h04; i = i+1;
 
-        //ram_cells[i] = 8'h71; i = i+1; // JMP
-        //ram_cells[i] = 8'hff; i = i+1;
-        //ram_cells[i] = 8'h05; i = i+1;
+        ram_cells[i] = 8'h71; i = i+1; // JMP
+        ram_cells[i] = 8'hff; i = i+1;
+        ram_cells[i] = 8'h05; i = i+1;
 
         // Hellorld!
         ram_cells[i] = 8'h80; i = i+1; // LDAL #48 (H)
