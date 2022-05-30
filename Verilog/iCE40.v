@@ -2,6 +2,7 @@
 `include "CPU6.v"
 `include "Memory.v"
 `include "LEDPanel.v"
+`include "PLL.v"
 
 /*
 DEVICE = hx1k (IceBlink40)
@@ -31,12 +32,13 @@ Info:           ICESTORM_PLL:     0/    2     0%
 Info:            SB_WARMBOOT:     0/    1     0%
 Timing estimate: 32.33 ns (30.93 MHz)
  */
-module iCE40(input clock, output LED2, output LED3, output LED4, output LED5);
+// icepll -m -f PLL.v -n PLL -i 100 -o 20
+module iCE40(input clock_100MHz, output LED1, output LED2, output LED3, output LED4, output LED5, output LED6, output LED7, output LED8);
     initial begin
         reset = 1;
     end
 
-    assign { LED2, LED3, LED4, LED5 } = leds[3:0];
+    assign {LED1, LED2, LED3, LED4, LED5, LED6, LED7, LED8} = leds;
     
     reg reset;
 
@@ -44,6 +46,7 @@ module iCE40(input clock, output LED2, output LED3, output LED4, output LED5);
     wire [7:0] data_c2r, data_r2c;
     wire [15:0] addressBus;
     wire [7:0] leds;
+	PLL pll(clock_100MHz, clock);
     Memory ram(clock, addressBus, writeEnBus, data_c2r, data_r2c);
     LEDPanel panel(clock, addressBus, writeEnBus, data_c2r, data_r2c, leds);
     CPU6 cpu (reset, clock, data_r2c, writeEnBus, addressBus, data_c2r);

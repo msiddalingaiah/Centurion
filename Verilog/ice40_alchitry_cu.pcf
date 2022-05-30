@@ -2,7 +2,7 @@
 # Alchitry CU
 
 # Clock
-set_io clock P7
+set_io clock_100MHz P7
 
 # Onboard LEDs
 set_io LED1 J11

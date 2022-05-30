@@ -29,11 +29,11 @@ all: $(PROJ).rpt $(PROJ).bin
 	icetime -d $(DEVICE) -mtr $@ $<
 
 prog: $(PROJ).bin
-	iCEburn -e -v -w  $<
+	sudo iceprog $<
 
 sudo-prog: $(PROJ).bin
 	@echo 'Executing prog as root!!!'
-	sudo iCEburn -e -v -w  $<
+	sudo iceprog $<
 
 test: CPU6TestBench
 	vvp CPU6TestBench

@@ -11,7 +11,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     integer i;
     initial begin
         cycle_counter = 0;
-        for (i=0; i<64; i=i+1) register_ram[i] = 8'hff;
+        for (i=0; i<16; i=i+1) register_ram[i] = 8'hff;
     end
 
     assign addressBus = memory_address;
@@ -46,8 +46,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     // This may or may not exist in hardware, but it solves a problem with instructions after JMP
     reg enable_pc_incr;
 
-    // Register RAM, limit to 64 bytes to reduce iCE40 resource requirements
-    reg [7:0] register_ram[0:63];
+    // Register RAM, limit to 16 bytes to reduce iCE40 resource requirements
+    reg [7:0] register_ram[0:16];
 
     // 6309 ROM
     wire [7:0] map_rom_address = DPBus;
@@ -219,7 +219,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
 
         case (d2d3)
             0: DPBus = swap_register;
-            1: DPBus = register_ram[register_index & 8'h3f]; // Limit to 64 regs for iCE40
+            1: DPBus = register_ram[register_index & 8'h0f]; // Limit to 8 regs for iCE40
             2: DPBus = { ~memory_address[15:12], memory_address[11:8] };
             3: DPBus = memory_address[7:0];
             4: ;
@@ -308,7 +308,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             end
             // k11.4 write register RAM
             if (k11 == 4) begin
-                register_ram[register_index & 8'h3f] <= result_register; // Limit to 64 byte of register_ram
+                register_ram[register_index & 8'h0f] <= result_register; // Limit to 16 byte of register_ram
             end
             if (k11 == 6) begin
                 work_address_lo <= result_register;
