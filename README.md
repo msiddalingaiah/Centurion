@@ -18,6 +18,12 @@ The build process is straightforward:
 
 The simulation output is saved in the ```Verilog/vcd``` directory. It can be viewed using [GTK Wave](http://gtkwave.sourceforge.net/).
 
+[Project IceStorm](https://clifford.at/icestorm) open source tools were used for synthesis. Below you can the see the very first program running on an [Alchitry Cu](https://alchitry.com/boards/cu) board with a [Lattice iCE40 HX8K](https://www.latticesemi.com/iCE40) FPGA:
+
+![Centurion1](images/Centurion1.gif "Running code")
+
+This version is operating with a system clock of 20MHz, five times the clock rate of the original Centurion CPU 6.
+
 The CPU6 is an interesting design. It is based on the [AMD Am2900](https://en.wikipedia.org/wiki/AMD_Am2900) family of bit slice devices. The entire CPU fits on a single board, using two Am2901s to make an 8-bit ALU. The control unit is [microcoded](https://en.wikipedia.org/wiki/Microcode), using 2 Am2909 microsequencers, and 1 Am2911 microsequencer with a 2048 word x 56-bit microprogram stored in seven EPROMs. It is typical of minicomputers of that era. Discrete CPUs based on the Am2900 family were soon superceded by fully integrated VLSI CPUs, such as the [Intel 8086](https://en.wikipedia.org/wiki/Intel_8086), [Motorola 68000](https://en.wikipedia.org/wiki/Motorola_68000), and numerous others.
 
 Below is a sample microcode execution trace. The marker shows the beginning of the very first instruction after reset. It executes a NOP (no operation) and then DLY (delay 4.5 ms).
