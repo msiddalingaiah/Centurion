@@ -4,6 +4,7 @@
 `include "Am2901.v"
 `include "CodeROM.v"
 `include "MapROM.v"
+`include "RegisterRAM.v"
 
 module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     output reg writeEnBus, output wire [15:0] addressBus, output wire [7:0] dataOutBus);
@@ -11,7 +12,6 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     integer i;
     initial begin
         cycle_counter = 0;
-        for (i=0; i<16; i=i+1) register_ram[i] = 8'hff;
     end
 
     assign addressBus = memory_address;
@@ -23,8 +23,6 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
 
     wire instruction_start = uc_rom_address == 11'h101;
     reg [31:0] cycle_counter;
-    wire [7:0] register0 = register_ram[0];
-    wire [7:0] register1 = register_ram[1];
     reg pc_increment;
     wire read_enable = h11 == 5;
 
@@ -46,9 +44,6 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     // This may or may not exist in hardware, but it solves a problem with instructions after JMP
     reg enable_pc_incr;
 
-    // Register RAM, limit to 16 bytes to reduce iCE40 resource requirements
-    reg [7:0] register_ram[0:16];
-
     // 6309 ROM
     wire [7:0] map_rom_address = DPBus;
     wire [7:0] map_rom_data;
@@ -59,6 +54,12 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     wire [55:0] uc_rom_data;
     CodeROM uc_rom(uc_rom_address, uc_rom_data);
 
+    // Synchronous Register RAM
+    wire [7:0] reg_ram_addr = register_index;
+    wire rr_write_en = k11 == 4;
+    wire [7:0] reg_ram_data_in = result_register;
+    wire [7:0] reg_ram_data_out;
+    RegisterRAM reg_ram(clock, rr_write_en, reg_ram_addr, reg_ram_data_in, reg_ram_data_out);
 
     // Sequencer shared nets
 
@@ -219,7 +220,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
 
         case (d2d3)
             0: DPBus = swap_register;
-            1: DPBus = register_ram[register_index & 8'h0f]; // Limit to 8 regs for iCE40
+            1: DPBus = reg_ram_data_out;
             2: DPBus = { ~memory_address[15:12], memory_address[11:8] };
             3: DPBus = memory_address[7:0];
             4: ;
@@ -305,10 +306,6 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             if (k11 == 3) begin
                 // enable F11 addressable latch, machine state, bus state
                 // A0-2 on F11 are B1-3 and D input is B0
-            end
-            // k11.4 write register RAM
-            if (k11 == 4) begin
-                register_ram[register_index & 8'h0f] <= result_register; // Limit to 16 byte of register_ram
             end
             if (k11 == 6) begin
                 work_address_lo <= result_register;
