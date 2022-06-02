@@ -12,14 +12,14 @@ a1 // STAL #5c00 (LEDPanel)
 0e //DLY (0e)
 0e //DLY (0e)
 0e //DLY (0e)
+0e //DLY (0e)
+0e //DLY (0e)
+0e //DLY (0e)
+0e //DLY (0e)
 71 // JMP #ff05
 ff
 05
 01 // NOP
-01
-01
-01
-01
 01
 01
 01

@@ -38,15 +38,17 @@ ff0e 71 ff 05 // JMP #ff05
 
 ![Centurion1](images/Centurion1.gif "Running code")
 
-This version is operating with a system clock of 20MHz, five times the clock rate of the original Centurion CPU6.
+This version is operating with a system clock of 20MHz, four times the clock rate of the original Centurion CPU6.
 
 ## Architecture
 
 The CPU6 is an interesting design. It is based on the [AMD Am2900](https://en.wikipedia.org/wiki/AMD_Am2900) family of bit slice devices. The entire CPU fits on a single board, using two Am2901s to make an 8-bit ALU. The control unit is [microcoded](https://en.wikipedia.org/wiki/Microcode), using 2 Am2909 microsequencers, and 1 Am2911 microsequencer with a 2048 word x 56-bit microprogram stored in seven EPROMs. It is typical of minicomputers of that era. Discrete CPUs based on the Am2900 family were soon superceded by fully integrated VLSI CPUs, such as the [Intel 8086](https://en.wikipedia.org/wiki/Intel_8086), [Motorola 68000](https://en.wikipedia.org/wiki/Motorola_68000), and numerous others.
 
-Below is a sample microcode execution trace. The marker shows the beginning of the very first instruction after reset. It executes a NOP (no operation) and then DLY (delay 4.5 ms).
+Below is a sample microcode execution trace. The marker shows the beginning of the very first instruction after reset. It executes a NOP (no operation) and then DLY (delay 4.55 ms).
 
 ![DCX Instruction](images/NOP_DLY.png "DCX Instruction Execution")
+
+## Datapath
 
 Below is the CPU data path with enables for busses and registers. The enables are controlled by the microcode word at the output of the pipeline register.
 
