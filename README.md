@@ -40,12 +40,13 @@ This is known to work on WSL Ubuntu running on Windows 11. USB support requires 
 
 ```
 usbipd wsl list
+```
+```
 usbipd wsl attach --busid <busid>
 ```
 
-The device should appear in WSL Ubuntu using ```lsusb```.
+Where busid is appropriate USB bus ID from the wsl list command above. The device should appear in WSL Ubuntu using ```lsusb```.
 
-Where busid is appropriate USB bus ID from the list command above.
 
 ![Centurion1](images/Centurion1.gif "Running code")
 
