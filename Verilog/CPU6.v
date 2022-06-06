@@ -55,7 +55,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     CodeROM uc_rom(uc_rom_address, uc_rom_data);
 
     // Synchronous Register RAM
-    wire [7:0] reg_ram_addr = register_index;
+    wire reg_low_select = pipeline[53];
+    wire [7:0] reg_ram_addr = register_index | {7'b0, ~reg_low_select};
     wire rr_write_en = k11 == 4;
     wire [7:0] reg_ram_data_in = result_register;
     wire [7:0] reg_ram_data_out;
