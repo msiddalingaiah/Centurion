@@ -36,6 +36,17 @@ ff0d 0e       // DLY 4.55 ms
 ff0e 71 ff 05 // JMP #ff05
 ```
 
+This is known to work on WSL Ubuntu running on Windows 11. USB support requires [usbipd](https://devblogs.microsoft.com/commandline/connecting-usb-devices-to-wsl) for device programming in WSL. To connect a USB device to WSL Ubuntu, the following commands must be executed from an **administrator** command prompt on Windows:
+
+```
+usbipd wsl list
+usbipd wsl attach --busid <busid>
+```
+
+The device should appear in WSL Ubuntu using ```lsusb```.
+
+Where busid is appropriate USB bus ID from the list command above.
+
 ![Centurion1](images/Centurion1.gif "Running code")
 
 This version is operating with a system clock of 20MHz, four times the clock rate of the original Centurion CPU6.

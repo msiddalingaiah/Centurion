@@ -194,7 +194,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             alu0_cin = 1;
         end else if (shift_carry == 2) begin
             // really comes from j9, see pipeline[15] above
-            alu0_cin = ~flags_register[0];
+            alu0_cin = flags_register[3];
         end else if (shift_carry == 3) begin
             alu0_cin = 0;
         end
@@ -337,45 +337,3 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
         end
     end
 endmodule
-
-/*
-
-TotalSeconds      : 1.0773913
-TotalMilliseconds : 1077.3913
-4.9 ms simulation time = 220 times slower than hardware Centurion
-About 22.75 kHz clock simulated
-
-First instruction is fetched about 40 uS after reset.
-
-Cycle counts
-
-Opcode: 0x01, cycles:     4
-Opcode: 0x02, cycles:     5
-Opcode: 0x03, cycles:     5
-Opcode: 0x04, cycles:     8
-Opcode: 0x05, cycles:     8
-Opcode: 0x06, cycles:     5
-Opcode: 0x07, cycles:     5
-Opcode: 0x08, cycles:     5
-Opcode: 0x09, cycles:    22
-Opcode: 0x0a, cycles:    31
-Opcode: 0x0b, cycles:    44
-Opcode: 0x0c, cycles:     6
-Opcode: 0x0d, cycles:     9
-Opcode: 0x0e, cycles: 22722
-Opcode: 0x0f, cycles:    42
-
-Opcode: 0x21, cycles:    12
-
-Opcode: 0x38, cycles:     7
-Opcode: 0x39, cycles:     7
-Opcode: 0x3a, cycles:     6
-Opcode: 0x3b, cycles:     7
-Opcode: 0x3c, cycles:    10
-Opcode: 0x3d, cycles:     8
-Opcode: 0x3e, cycles:    10
-Opcode: 0x3f, cycles:    10
-Opcode: 0x81, cycles:     8
-Opcode: 0x83, cycles:    18
-
- */
