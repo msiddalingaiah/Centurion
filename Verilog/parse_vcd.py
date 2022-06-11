@@ -33,11 +33,15 @@ class Signal(object):
     def getName(self):
         return self.sigDef.getName()
 
+    def getTag(self):
+        return self.sigDef.tag
+
     def __str__(self):
         return self.value
 
 class VCDFile(object):
     def __init__(self, fname):
+        self.signalTagMap = {}
         self.signalMap = {}
         self.signals = []
         with open(fname) as f:
@@ -53,19 +57,17 @@ class VCDFile(object):
             if len(cols) > 0:
                 if cols[0] == '$scope':
                     module = cols[2]
-                    #print(module)
                 if cols[0] == '$var':
                     sd = SignalDef(module, cols)
-                    #print(sd, sd.isValid())
                     if sd.isValid():
                         self.signalMap[sd.tag] = sd
+                        self.signalTagMap[sd.getName()] = sd.tag
         prevTime = -1
         time = 0
         signals = {}
         for tag, df in self.signalMap.items():
             sig = Signal(time, df, -1)
-            print(df)
-            signals[sig.getName()] = sig
+            signals[sig.getTag()] = sig
         while index < len(lines):
             line = lines[index]
             index += 1
@@ -89,7 +91,7 @@ class VCDFile(object):
                         if 'x' not in valueStr[1:]:
                             value = int(valueStr[1:], radixMap[valueStr[0]])
                         sig = Signal(time, self.signalMap.get(cols[1]), value)
-                        signals[sig.getName()] = sig
+                        signals[sig.getTag()] = sig
                     elif cols[0] != '$end':
                         valueStr = cols[0]
                         # print(valueStr)
@@ -97,7 +99,7 @@ class VCDFile(object):
                         if 'x' not in valueStr[0]:
                             value = int(valueStr[0])
                         sig = Signal(time, self.signalMap.get(valueStr[1]), value)
-                        signals[sig.getName()] = sig
+                        signals[sig.getTag()] = sig
 
     def copy(self, sigs):
         result = {}
@@ -105,34 +107,88 @@ class VCDFile(object):
             result[k] = v
         return result
 
-e6Map = {0:'', 1:'RR<=FBus', 2:'RI<=FBus', 3:'', 4:'', 5:'MAR<=>WAR', 6:'', 7:'LoadCC'}
-k11Map = {0:'', 1:'', 2:'', 3:'Load F11', 4:'', 5:'', 6:'WAR.LO<=', 7:'WrBus'}
+e6Map = {0:'', 1:'RR<-FBus', 2:'RI<-FBus', 3:'', 4:'', 5:'MAR<->WAR', 6:'', 7:'LoadCC'}
+k11Map = {0:'', 1:'', 2:'', 3:'Load F11', 4:'', 5:'', 6:'WAR.LO<-', 7:'WrBus'}
+pcIncMap = {0:'', 1:'PC++'}
+d2d3Map = {0:'DPBus=Swap', 1:'DPBus=Reg', 2:'DPBus=MAR.HI', 3:'DPBus=MAR.LO', 4:'', 5:'', 6:'', 7:'', 8:'',
+            9:'DPBus=CC', 10:'DPBus=BusIn', 11:'', 12:'', 13:'DPBus=const', 14:'', 15:''}
+
+ALU_SRC_MAP = [['A', 'Q'], ['A', 'B'], ['0', 'Q'], ['0', 'B'], ['0', 'A'], ['D', 'A'], ['D', 'Q'], ['D', '0']]
+ALU_OP_MAP = ['{r}+{s}', '{s}-{r}', '{r}-{s}', '{r}|{s}', '{r}&{s}', '(~{r})&{s}', '{r}^{s}', '~({r}^{s})']
+ALU_MEM_DEST_MAP = ['', '', 'r{b} = {f}', 'r{b} = {f}', 'r{b} = ({f})>>1', 'r{b} = ({f})>>1', 'r{b} = ({f})<<1', 'r{b} = ({f})<<1']
+ALU_Q_DEST_MAP = ['Q = {f}', '', '', '', 'Q >>= 1', '', 'Q <<= 1', '']
+ALU_OUT_MAP = ['Y = {f}', 'Y = {f}', 'Y = {a}', 'Y = {f}', 'Y = {f}', 'Y = {f}', 'Y = {f}', 'Y = {f}']
+
 
 class Disassembler(object):
-    def __init__(self, signals):
+    def __init__(self, signals, signalTagMap):
         self.signals = signals
+        self.signalTagMap = signalTagMap
+
+    def getSignal(self, sig, name):
+        tag = self.signalTagMap[name]
+        return sig[tag]
 
     def disassembleAll(self):
         i = 1
         while i < len(self.signals[1:]):
             sig = self.signals[i]
             i += 1
-            print(self.disassembleOne(sig))
+            if self.getSignal(sig, 'cg0.clock').value == 1:
+                print(self.disassembleOne(sig))
+
+    def getALUCode(self, aluA, aluB, aluOp, aluSrc, aluDest, cin):
+        r, s = ALU_SRC_MAP[aluSrc]
+        if r == 'A':
+            r = f'r{aluA}'
+        elif r == 'B':
+            r = f'r{aluB}'
+        if s == 'A':
+            s = f'r{aluA}'
+        elif s == 'B':
+            s = f'r{aluB}'
+        f = ALU_OP_MAP[aluOp].format(r=r, s=s)
+        mem = ALU_MEM_DEST_MAP[aluDest].format(b=aluB, f=f)
+        q = ALU_Q_DEST_MAP[aluDest].format(f=f)
+        a = f'r{aluA}'
+        y = ALU_OUT_MAP[aluDest].format(f=f, a=a)
+        return f'{mem}+{cin} {q} {y}'
 
     def disassembleOne(self, sig):
-        clock = sig['ram.clock']
-        addr = sig['cpu.uc_rom_address'].value
-        e6 = sig['cpu.e6'].value
-        k11 = sig['cpu.k11'].value
-        h11 = sig['cpu.h11'].value
+        clock = self.getSignal(sig, 'cg0.clock')
+        addr = self.getSignal(sig, 'cpu.uc_rom_address').value
+        e6 = self.getSignal(sig, 'cpu.e6').value
+        k11 = self.getSignal(sig, 'cpu.k11').value
+        h11 = self.getSignal(sig, 'cpu.h11').value
+        pcInc = self.getSignal(sig, 'cpu.pc_increment').value
+        d2d3 = self.getSignal(sig, 'cpu.d2d3').value
+        constant = self.getSignal(sig, 'cpu.constant').value
         if k11 == 6:
-            k11Map[k11] = 'WAR.LO<=RR'
+            k11Map[6] = 'WAR.LO<-RR'
             if e6 == 5:
-                k11Map[k11] = 'WAR.LO<=MAR.LO'
+                k11Map[6] = 'WAR.LO<-MAR.LO'
+        if h11 == 3:
+            k11Map[6] = 'WAR.HI<-RR'
+            if e6 == 5:
+                k11Map[6] = 'WAR.HI<-MAR.HI'
+        if d2d3 == 13:
+            d2d3Map[13] = f'DPBus<-{constant:02x}'
+        fbus = 'FBus<-Y'
+        if h11 == 6:
+            fbus = 'FBus<-MAP'
+        alu_a = self.getSignal(sig, 'cpu.alu_a').value
+        alu_b = self.getSignal(sig, 'cpu.alu_b').value
+        alu_src = self.getSignal(sig, 'cpu.alu_src').value
+        alu_op = self.getSignal(sig, 'cpu.alu_op').value
+        alu_dest = self.getSignal(sig, 'cpu.alu_dest').value
+        alu0_cin = self.getSignal(sig, 'cpu.alu0_cin').value
+        aluCode = self.getALUCode(alu_a, alu_b, alu_op, alu_src, alu_dest, alu0_cin)
 
-        return f'{clock.time} {clock.value} {addr:03x}, {e6Map[e6]} {k11Map[k11]}'
+        return f'{int(clock.time/100)} {addr:03x}: {d2d3Map[d2d3]} {aluCode} {fbus} _|- {e6Map[e6]} {k11Map[k11]} {pcIncMap[pcInc]}'
 
 if __name__ == '__main__':
     vcd = VCDFile('vcd/CPUTestBench.vcd')
-    dis = Disassembler(vcd.signals)
+    dis = Disassembler(vcd.signals, vcd.signalTagMap)
     dis.disassembleAll()
+    #x = [f"{i}:''" for i in range(16)]
+    #print(', '.join(x))
