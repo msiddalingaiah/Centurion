@@ -22,7 +22,11 @@ The simulation output is saved in the ```Verilog/vcd``` directory. It can be vie
 
 ## Synthesis
 
-[Project IceStorm](https://clifford.at/icestorm) open source tools were used for synthesis. Below is the very first program running on an [Alchitry Cu](https://alchitry.com/boards/cu) board with a [Lattice iCE40 HX8K](https://www.latticesemi.com/iCE40) FPGA:
+[Project IceStorm](https://clifford.at/icestorm) open source tools were used for synthesis. Below is a demonstration program running on an [Alchitry Cu](https://alchitry.com/boards/cu) FPGA board containing a [Lattice iCE40 HX8K](https://www.latticesemi.com/iCE40):
+
+![Centurion1](images/Centurion3.gif "Running code")
+
+This version is operating with a CPU clock of 5MHz, which is the estimated the clock rate of the original Centurion CPU6. This design can operate as high as 30MHz, many times faster the original. The assembly code used for the demonstration program is below:
 
 ```
 ff02 80 00    // LDAL #00
@@ -33,10 +37,21 @@ ff0a 0e       // DLY 4.55 ms
 ff0b 0e       // DLY 4.55 ms
 ff0c 0e       // DLY 4.55 ms
 ff0d 0e       // DLY 4.55 ms
-ff0e 71 ff 05 // JMP #ff05
+ff0e 0e       // DLY 4.55 ms
+ff0f 0e       // DLY 4.55 ms
+ff10 0e       // DLY 4.55 ms
+ff11 0e       // DLY 4.55 ms
+ff12 71 ff 05 // JMP #ff05
 ```
 
-This is known to work on WSL Ubuntu running on Windows 11. USB support requires [usbipd](https://devblogs.microsoft.com/commandline/connecting-usb-devices-to-wsl) for device programming in WSL. To connect a USB device to WSL Ubuntu, the following commands must be executed from an **administrator** command prompt on Windows:
+Synthesis is known to work on [WSL](https://docs.microsoft.com/en-us/windows/wsl/install) Ubuntu running on Windows 11. The following command will perform synthesis:
+
+```
+cd Verilog
+make
+```
+
+USB support on WSL requires [usbipd](https://devblogs.microsoft.com/commandline/connecting-usb-devices-to-wsl) for device programming in WSL. To connect a USB device to WSL Ubuntu, the following commands must be executed from an **administrator** command prompt on Windows:
 
 ```
 usbipd wsl list
@@ -45,12 +60,13 @@ usbipd wsl list
 usbipd wsl attach --busid <busid>
 ```
 
-Where busid is appropriate USB bus ID from the wsl list command above. The device should appear in WSL Ubuntu using ```lsusb```.
+Where busid is the appropriate USB bus ID from the wsl list command above. The device should appear in WSL Ubuntu using ```lsusb```.
 
+The board can be programmed from WSL Ubuntu using:
 
-![Centurion1](images/Centurion1.gif "Running code")
-
-This version is operating with a system clock of 20MHz, four times the clock rate of the original Centurion CPU6.
+```
+make sudo-prog
+```
 
 ## Architecture
 
@@ -66,8 +82,11 @@ Below is the CPU data path with enables for busses and registers. The enables ar
 
 ![Data path](images/Datapath.png "Data path")
 
+## Status
+
+Development is in progress. Many instructions have not been tested.
+
 ### Links
 
  * [Schematics](https://github.com/Meisaka/CenMiniCom)
  * [Schematics and Microcode](https://github.com/sjsoftware/centurion-cpu6)
- 
