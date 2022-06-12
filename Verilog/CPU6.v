@@ -23,8 +23,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
 
     wire instruction_start = uc_rom_address == 11'h101;
     reg [31:0] cycle_counter;
-    reg pc_increment;
-    wire read_enable = h11 == 5;
+    assign pc_increment = h11 == 5 ? 1 : 0;
 
     /*
      * Rising edge triggered registers
@@ -40,9 +39,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     reg [7:0] swap_register;
     reg [7:0] flags_register;
     reg [3:0] condition_codes; // M12
-
-    // This may or may not exist in hardware, but it solves a problem with instructions after JMP
-    reg enable_pc_incr;
+    reg [7:0] bus_read; // A11/A12
 
     // 6309 ROM
     wire [7:0] map_rom_address = DPBus;
@@ -233,7 +230,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             7: ;
             8: ; // DPBus = translated address hi, 17:11 (17 down), and top 3 bits together
             9: DPBus = { ~condition_codes[3:0], 4'b0000 }; // low nibble is sense switches
-            10: DPBus = dataInBus;
+            10: DPBus = bus_read; // DPBus = (e7 == 3) ? dataInBus : bus_read;
             11: ; // read ILR (interrupt level register?) H14 4 bits, A8 4 bits current level
             12: ; // read switch 2 other half of dip switches and condition codes?
             13: DPBus = constant;
@@ -242,20 +239,9 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
         endcase
 
         FBus = { alu1_yout, alu0_yout };
-
         if (h11 == 6) begin
             FBus = map_rom_data;
         end
-
-        pc_increment = 0;
-        //if (h11 == 1) begin // no good
-        //if (h11 == 6) begin // no good!
-        if (h11 == 5 && enable_pc_incr) begin // this seems to work, seems complicated
-            pc_increment = 1;
-        end
-        // if (d2d3 == 10 || k11 == 7) begin
-        //     pc_increment = 1;
-        // end
     end
 
     // Guideline #1: When modeling sequential logic, use nonblocking 
@@ -268,7 +254,6 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             register_index <= 0;
             result_register <= 0;
             swap_register <= 0;
-            enable_pc_incr <= 0;
             condition_codes <= 0;
             flags_register <= 0;
             writeEnBus <= 0;
@@ -280,19 +265,15 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             end else begin
                 cycle_counter <= cycle_counter + 1;
             end
-            // PC increment
-            if (pc_increment) begin
-                memory_address <= memory_address + 1;
-            end
 
-            // E6 decoder
+            // 74LS138
             case (e6)
                 0: ;
                 1: result_register <= FBus;
                 2: register_index <= FBus; // uC bit 53 might simplify 16 bit register write
                 3: ; // load D9
                 4: ; // load page table base register
-                5: begin memory_address <= {work_address_hi, work_address_lo}; enable_pc_incr <= !enable_pc_incr; end
+                5: begin memory_address <= {work_address_hi, work_address_lo}; end
                 6: ; // load AR on 2909, see above
                 7: // load condition code register M12
                     begin
@@ -305,6 +286,32 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                             default: ;
                         endcase
                     end
+            endcase
+
+            // 74LS138 (only half used)            
+            case (e7)
+                0: ;
+                1: ;
+                2: flags_register <= { 1'b0, 1'b0, flags_register[0], alu0_cout, alu1_cout, alu1_ovr, alu1_f3, alu0_f0 & alu1_f0 };
+                3: bus_read <= dataInBus;
+            endcase
+
+            // 74LS138
+            case (h11)
+                0: ;
+                1: ; // Begin bus cycle
+                2: ;
+                3: // load work_address_hi
+                    begin
+                        work_address_hi <= result_register;
+                        if (e6 == 5) begin
+                            work_address_hi <= memory_address[15:8];
+                        end
+                    end
+                4: ;
+                5: memory_address <= memory_address + 1; // PC increment
+                6: ; // Select FBus source (combinational)
+                7: ;
             endcase
 
             if (k11 == 3) begin
@@ -321,22 +328,6 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             // might be a bus write, seems to be true
             if (k11 == 7) begin
                 writeEnBus <= 1;
-            end
-            if (h11 == 3) begin
-                work_address_hi <= result_register;
-                if (e6 == 5) begin
-                    work_address_hi <= memory_address[15:8];
-                end
-            end
-            if (h11 == 5) begin
-                enable_pc_incr <= 1;
-            end
-            if (h11 == 6) begin
-                // see above
-            end
-            if (e7 == 2) begin
-                // save condition codes from ALU to J9
-                flags_register <= { 1'b0, 1'b0, flags_register[0], alu0_cout, alu1_cout, alu1_ovr, alu1_f3, alu0_f0 & alu1_f0 };
             end
         end
     end

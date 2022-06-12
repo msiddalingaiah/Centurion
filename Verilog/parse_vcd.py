@@ -152,7 +152,8 @@ k11Map = {0:'', 1:'', 2:'', 3:'Load F11', 4:'R[]<-', 5:'', 6:'WAR.LO<-', 7:'WrBu
 pcIncMap = {0:'', 1:'PC++'}
 d2d3Map = {0:'D=Swap', 1:'D=Reg', 2:'D=MAR.HI', 3:'D=MAR.LO', 4:'', 5:'', 6:'', 7:'', 8:'',
             9:'D=CC', 10:'D=BusIn', 11:'', 12:'', 13:'D=const', 14:'', 15:''}
-h11Map = {0:'', 1:'', 2:'', 3:'WAR.HI', 4:'', 5:'', 6:'', 7:''}
+h11Map = {0:'StartBus', 1:'', 2:'', 3:'WAR.HI', 4:'', 5:'', 6:'', 7:''}
+e7Map = {0:'', 1:'', 2:'LoadFlags', 3:'BusReg<-Bus', 4:'', 5:'', 6:'', 7:''}
 
 ALU_SRC_MAP = [['A', 'Q'], ['A', 'B'], ['0', 'Q'], ['0', 'B'], ['0', 'A'], ['D', 'A'], ['D', 'Q'], ['D', '0']]
 ALU_OP_MAP = ['{r}+{s}', '{s}-{r}', '{r}-{s}', '{r}|{s}', '{r}&{s}', '(~{r})&{s}', '{r}^{s}', '~({r}^{s})']
@@ -210,6 +211,7 @@ class Disassembler(object):
         h11 = self.getSignal(sig, 'cpu.h11').value
         pcInc = self.getSignal(sig, 'cpu.pc_increment').value
         d2d3 = self.getSignal(sig, 'cpu.d2d3').value
+        e7 = self.getSignal(sig, 'cpu.e7').value
         constant = self.getSignal(sig, 'cpu.constant').value
         dataInBus = self.getSignal(sig, 'cpu.dataInBus').value
         map_rom_data = self.getSignal(sig, 'cpu.map_rom_data').value
@@ -217,10 +219,12 @@ class Disassembler(object):
         register_index = self.getSignal(sig, 'cpu.register_index').value
         register_index = self.getSignal(sig, 'cpu.register_index').value
         FBus = self.getSignal(sig, 'cpu.FBus').value
+        DPBus = self.getSignal(sig, 'cpu.DPBus').value
         memory_address = self.getSignal(sig, 'cpu.memory_address').value
         result_register = self.getSignal(sig, 'cpu.result_register').value
         alu0_yout = self.getSignal(sig, 'cpu.alu0_yout').value & 0xf
         alu1_yout = self.getSignal(sig, 'cpu.alu1_yout').value & 0xf
+        bus_read = self.getSignal(sig, 'cpu.bus_read').value & 0xf
         alu_out = (alu1_yout << 4) | alu0_yout
         mar_hi = (memory_address >> 8) & 0xff
         mar_lo = memory_address & 0xff
@@ -236,7 +240,7 @@ class Disassembler(object):
         if d2d3 == 1:
             d2d3Map[1] = f'D=R[{register_index:02x}]({reg_ram_data_out:02x})'
         if d2d3 == 10:
-            d2d3Map[10] = f'D=Bus({dataInBus:02x})'
+            d2d3Map[10] = f'D=bus_read({bus_read:02x})'
         if d2d3 == 13:
             d2d3Map[13] = f'D=const({constant:02x})'
         fbr = f'FBus=Y({alu_out:02x})'
@@ -259,13 +263,12 @@ class Disassembler(object):
         aluCode = self.getALUCode(alu_a, alu_b, alu_op, alu_src, alu_dest, alu0_cin)
         inst = ''
         if addr == 0x104:
-            inst = get_op_code(dataInBus)
+            inst = get_op_code(DPBus)
         time = int(clock.time/100)
-        h11_5 = ''
-        if h11 == 5:
-            h11_5 = 'H11_5'
 
-        return f'{time} {addr:03x}: {d2d3Map[d2d3]} {aluCode} {fbr}  _||_  {e6Map[e6]} {k11Map[k11]} {h11Map[h11]} {pcIncMap[pcInc]} {h11_5}  {inst}'
+        comb = f'{time} {addr:03x}: {d2d3Map[d2d3]} {aluCode} {fbr}'
+        seq = f'{e6Map[e6]} {k11Map[k11]} {h11Map[h11]} {pcIncMap[pcInc]} {e7Map[e7]}  {inst}'
+        return f'{comb}  _||_  {seq}'
 
 if __name__ == '__main__':
     vcd = VCDFile('vcd/CPUTestBench.vcd')

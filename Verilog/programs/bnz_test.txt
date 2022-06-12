@@ -5,8 +5,8 @@ ff
 01 // NOP
 20 // INR AL, 1
 00
-15 // BNZ 4
-04
+15 // BNZ 3
+03
 71 // JMP #ff05
 ff
 05
