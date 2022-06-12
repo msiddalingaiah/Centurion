@@ -11,15 +11,14 @@ RegisterRAM reg [7:0] memory[0:255];
 reg [7:0] ram_cells[0:255];
 
 Info: Device utilisation:
-Info:            ICESTORM_LC:  5104/ 7680    66%
-Info:           ICESTORM_RAM:    29/   32    90%
+Info:            ICESTORM_LC:  1143/ 7680    14%
+Info:           ICESTORM_RAM:    30/   32    93%
 Info:                  SB_IO:     9/  256     3%
 Info:                  SB_GB:     5/    8    62%
 Info:           ICESTORM_PLL:     1/    2    50%
 Info:            SB_WARMBOOT:     0/    1     0%
-
-// Timing estimate: 32.36 ns (30.90 MHz)
  */
+// Timing estimate: 24.39 ns (40.99 MHz)
 // icepll -m -f PLL.v -n PLL -i 100 -o 20
 module iCE40(input clock_100MHz, output LED1, output LED2, output LED3, output LED4, output LED5, output LED6, output LED7, output LED8);
     initial begin

@@ -157,7 +157,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     Am2901 alu1(clock, alu1_din, alu_a, alu_b, alu_src, alu_op, alu_dest, alu1_cin,
         alu1_yout, alu1_cout, alu1_f0, alu1_f3, alu1_ovr);
 
-    // Enables
+    // Decoders
     // d2d3 is decoded before pipeline, but outputs are registered.
     wire [3:0] d2d3 = pipeline[3:0];
     wire [1:0] e7 = pipeline[14:13];
@@ -172,11 +172,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     wire [7:0] constant = ~pipeline[16+7:16];
 
     // Internal Busses
-    // Register RAM reads from FBus (not certain)
-    // Register RAM writes to DPBus
     reg [7:0] DPBus;
     reg [7:0] FBus;
-    reg [7:0] RBus;
 
     // Guideline #3: When modeling combinational logic with an "always" 
     //              block, use blocking assignments.
@@ -219,6 +216,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
         // Datapath muxes
         DPBus = 0;
 
+        // 74LS139 (D2), 74LS138 (D3)
         case (d2d3)
             0: DPBus = swap_register;
             1: DPBus = reg_ram_data_out;
@@ -274,7 +272,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 3: ; // load D9
                 4: ; // load page table base register
                 5: begin memory_address <= {work_address_hi, work_address_lo}; end
-                6: ; // load AR on 2909, see above
+                6: ; // load AR on 2909s, see above
                 7: // load condition code register M12
                     begin
                         // based on table in wiki (j12), condition codes in instructions wiki
@@ -314,21 +312,25 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 7: ;
             endcase
 
-            if (k11 == 3) begin
-                // enable F11 addressable latch, machine state, bus state
-                // A0-2 on F11 are B1-3 and D input is B0
-            end
-            if (k11 == 6) begin
-                work_address_lo <= result_register;
-                if (e6 == 5) begin
-                    work_address_lo <= memory_address[7:0];
-                end
-            end
             writeEnBus = 0;
-            // might be a bus write, seems to be true
-            if (k11 == 7) begin
-                writeEnBus <= 1;
-            end
+
+            // 74LS138
+            case (k11)
+                0: ;
+                1: ;
+                2: ;
+                3: ; // enable F11 addressable latch, machine state, bus state, A0-2 on F11 are B1-3 and D input is B0
+                4: ;
+                5: ;
+                6: // Work address low
+                    begin
+                        work_address_lo <= result_register;
+                        if (e6 == 5) begin
+                            work_address_lo <= memory_address[7:0];
+                        end
+                    end
+                7: writeEnBus <= 1;
+            endcase
         end
     end
 endmodule
