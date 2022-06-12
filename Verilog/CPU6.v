@@ -31,8 +31,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     // Pipeline register
     reg [55:0] pipeline;
     // ALU flags register
-    reg [7:0] work_address_lo;
-    reg [7:0] work_address_hi;
+    reg [15:0] work_address;
     reg [15:0] memory_address;
     reg [7:0] register_index;
     reg [7:0] result_register;
@@ -246,8 +245,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     //              assignments.
     always @(posedge clock, posedge reset) begin
         if (reset == 1) begin
-            work_address_lo <= 0;
-            work_address_hi <= 0;
+            work_address <= 0;
             memory_address <= 0;
             register_index <= 0;
             result_register <= 0;
@@ -271,7 +269,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 2: register_index <= FBus; // uC bit 53 might simplify 16 bit register write
                 3: ; // load D9
                 4: ; // load page table base register
-                5: begin memory_address <= {work_address_hi, work_address_lo}; end
+                5: memory_address <= work_address;
                 6: ; // load AR on 2909s, see above
                 7: // load condition code register M12
                     begin
@@ -297,17 +295,17 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             // 74LS138
             case (h11)
                 0: ;
-                1: ; // Begin bus cycle
-                2: ;
-                3: // load work_address_hi
+                1: ; // Begin bus read cycle
+                2: ; // Begin bus write cycle
+                3: // load work_address high
                     begin
-                        work_address_hi <= result_register;
+                        work_address[15:8] <= result_register;
                         if (e6 == 5) begin
-                            work_address_hi <= memory_address[15:8];
+                            work_address[15:8] <= memory_address[15:8];
                         end
                     end
-                4: ;
-                5: memory_address <= memory_address + 1; // PC increment
+                4: work_address <= work_address + 1; // WAR increment
+                5: memory_address <= memory_address + 1; // MAR increment
                 6: ; // Select FBus source (combinational)
                 7: ;
             endcase
@@ -324,9 +322,9 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 5: ;
                 6: // Work address low
                     begin
-                        work_address_lo <= result_register;
+                        work_address[7:0] <= result_register;
                         if (e6 == 5) begin
-                            work_address_lo <= memory_address[7:0];
+                            work_address[7:0] <= memory_address[7:0];
                         end
                     end
                 7: writeEnBus <= 1;
