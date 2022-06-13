@@ -200,6 +200,8 @@ class Disassembler(object):
                 instruction_start = self.getSignal(sig, 'cpu.instruction_start').value
                 if instruction_start == 1:
                     code.append('')
+                    memory_address = self.getSignal(sig, 'cpu.memory_address').value
+                    code.append(f'* memory_address: {memory_address:04x}')
                 code.append(self.disassembleOne(sig))
         return code
 

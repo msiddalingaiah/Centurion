@@ -185,16 +185,12 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
         end
 
         alu0_cin = 0;
-        if (shift_carry == 0) begin
-            alu0_cin = 0;
-        end else if (shift_carry == 1) begin
-            alu0_cin = 1;
-        end else if (shift_carry == 2) begin
-            // really comes from j9, see pipeline[15] above
-            alu0_cin = flags_register[3];
-        end else if (shift_carry == 3) begin
-            alu0_cin = 0;
-        end
+        case (shift_carry)
+            0: alu0_cin = 0;
+            1: alu0_cin = 1;
+            2: alu0_cin = flags_register[3];
+            3: alu0_cin = 0;
+        endcase
 
         seq0_orin = 0;
         if (case_ == 0) begin
@@ -203,6 +199,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 seq0_orin[1] = flags_register[0];
             end
         end
+
         seq1_orin = 0;
 
         seq0_re = 1;
@@ -297,7 +294,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 0: ;
                 1: ; // Begin bus read cycle
                 2: ; // Begin bus write cycle
-                3: // load work_address high
+                3: // Load work_address high byte
                     begin
                         work_address[15:8] <= result_register;
                         if (e6 == 5) begin
@@ -320,7 +317,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 3: ; // enable F11 addressable latch, machine state, bus state, A0-2 on F11 are B1-3 and D input is B0
                 4: ;
                 5: ;
-                6: // Work address low
+                6: // Load work_address low byte
                     begin
                         work_address[7:0] <= result_register;
                         if (e6 == 5) begin
