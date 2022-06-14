@@ -147,19 +147,19 @@ class VCDFile(object):
             result[k] = v
         return result
 
-e6Map = {0:'', 1:'RR<-FBus', 2:'RI<-FBus', 3:'', 4:'', 5:'MAR<->WAR', 6:'', 7:'LoadCC'}
+e6Map = {0:'', 1:'RR<-FBus', 2:'RI<-FBus', 3:'', 4:'', 5:'MR<>WR', 6:'', 7:'LoadCC'}
 k11Map = {0:'', 1:'', 2:'', 3:'Load F11', 4:'R[]<-', 5:'', 6:'WAR.LO<-', 7:'WrBus'}
 pcIncMap = {0:'', 1:'PC++'}
 d2d3Map = {0:'D=Swap', 1:'D=Reg', 2:'D=MAR.HI', 3:'D=MAR.LO', 4:'', 5:'', 6:'', 7:'', 8:'',
             9:'D=CC', 10:'D=BusIn', 11:'', 12:'', 13:'D=const', 14:'', 15:''}
-h11Map = {0:'StartBus', 1:'', 2:'', 3:'WAR.HI', 4:'', 5:'', 6:'', 7:''}
-e7Map = {0:'', 1:'', 2:'LoadFlags', 3:'BusReg<-Bus', 4:'', 5:'', 6:'', 7:''}
+h11Map = {0:'StBus', 1:'', 2:'', 3:'WAR.HI', 4:'', 5:'', 6:'', 7:''}
+e7Map = {0:'', 1:'', 2:'LoadFl', 3:'BusR<-Bus', 4:'', 5:'', 6:'', 7:''}
 
 ALU_SRC_MAP = [['A', 'Q'], ['A', 'B'], ['0', 'Q'], ['0', 'B'], ['0', 'A'], ['D', 'A'], ['D', 'Q'], ['D', '0']]
 ALU_OP_MAP = ['{r}+{s}', '{s}-{r}', '{r}-{s}', '{r}|{s}', '{r}&{s}', '(~{r})&{s}', '{r}^{s}', '~({r}^{s})']
-ALU_MEM_DEST_MAP = ['', '', 'r{b} = {f}', 'r{b} = {f}', 'r{b} = ({f})>>1', 'r{b} = ({f})>>1', 'r{b} = ({f})<<1', 'r{b} = ({f})<<1']
-ALU_Q_DEST_MAP = ['Q = {f}', '', '', '', 'Q >>= 1', '', 'Q <<= 1', '']
-ALU_OUT_MAP = ['Y = {f}', 'Y = {f}', 'Y = {a}', 'Y = {f}', 'Y = {f}', 'Y = {f}', 'Y = {f}', 'Y = {f}']
+ALU_MEM_DEST_MAP = ['', '', 'r{b}={f}', 'r{b}={f}', 'r{b}=({f})>>1', 'r{b}=({f})>>1', 'r{b}=({f})<<1', 'r{b} =({f})<<1']
+ALU_Q_DEST_MAP = ['Q = {f}', '', '', '', 'Q>>=1', '', 'Q<<=1', '']
+ALU_OUT_MAP = ['Y={f}', 'Y={f}', 'Y={a}', 'Y={f}', 'Y={f}', 'Y={f}', 'Y={f}', 'Y={f}']
 
 
 class Disassembler(object):
@@ -230,28 +230,29 @@ class Disassembler(object):
         alu_out = (alu1_yout << 4) | alu0_yout
         mar_hi = (memory_address >> 8) & 0xff
         mar_lo = memory_address & 0xff
+        reg_low_select = self.getSignal(sig, 'cpu.reg_low_select').value
 
         if k11 == 6:
-            k11Map[6] = f'WAR.LO<-RR({result_register:02x})'
+            k11Map[6] = f'WR.LO<-RR({result_register:02x})'
             if e6 == 5:
-                k11Map[6] = f'WAR.LO<-MAR.LO({mar_lo:02x})'
+                k11Map[6] = f'WR.LO<-MR.LO({mar_lo:02x})'
         if h11 == 3:
-            h11Map[3] = f'WAR.HI<-RR({result_register:02x})'
+            h11Map[3] = f'WR.HI<-RR({result_register:02x})'
             if e6 == 5:
-                h11Map[3] = 'WAR.HI<-MAR.HI({mar_hi:02x})'
+                h11Map[3] = f'WR.HI<-MR.HI({mar_hi:02x})'
         if d2d3 == 1:
             d2d3Map[1] = f'D=R[{register_index:02x}]({reg_ram_data_out:02x})'
         if d2d3 == 10:
-            d2d3Map[10] = f'D=bus_read({bus_read:02x})'
+            d2d3Map[10] = f'D=BusR({bus_read:02x})'
         if d2d3 == 13:
             d2d3Map[13] = f'D=const({constant:02x})'
-        fbr = f'FBus=Y({alu_out:02x})'
+        fbr = f'F=Y({alu_out:02x})'
         if h11 == 6:
-            fbr = f'FBus=Map({map_rom_data:02x})'
+            fbr = f'F=Map({map_rom_data:02x})'
         if e6 == 1:
-            e6Map[1] = f'RR<-FBus({FBus:02x})'
+            e6Map[1] = f'RR<-F({FBus:02x})'
         if e6 == 2:
-            e6Map[2] = f'RI<-FBus({FBus:02x})'
+            e6Map[2] = f'RI<-F({FBus:02x})'
         if pcInc == 1:
             pcIncMap[1] = f'PC++({memory_address:04x})'
         if k11 == 4:
@@ -268,9 +269,10 @@ class Disassembler(object):
             inst = get_op_code(DPBus)
         time = int(clock.time/100)
 
-        comb = f'{time} {addr:03x}: {d2d3Map[d2d3]} {aluCode} {fbr}'
-        seq = f'{e6Map[e6]} {k11Map[k11]} {h11Map[h11]} {pcIncMap[pcInc]} {e7Map[e7]}  {inst}'
-        return f'{comb}  _||_  {seq}'
+        rls = reg_low_select
+        comb = f'{time} {addr:03x}: {d2d3Map[d2d3]:12s} {aluCode:21s} {fbr:9s} RL{rls:1d}'
+        seq = f'{e6Map[e6]} {h11Map[h11]} {k11Map[k11]} {pcIncMap[pcInc]} {e7Map[e7]}  {inst}'
+        return f'{comb} | {seq}'
 
 if __name__ == '__main__':
     vcd = VCDFile('vcd/CPUTestBench.vcd')
