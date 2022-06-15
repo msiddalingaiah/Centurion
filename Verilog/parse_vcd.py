@@ -264,13 +264,16 @@ class Disassembler(object):
         alu_dest = self.getSignal(sig, 'cpu.alu_dest').value
         alu0_cin = self.getSignal(sig, 'cpu.alu0_cin').value
         aluCode = self.getALUCode(alu_a, alu_b, alu_op, alu_src, alu_dest, alu0_cin)
+        if k11 == 3:
+            k11Map[3] = f'F11<-aluB({alu_b:1x})'
+
         inst = ''
         if addr == 0x104:
             inst = get_op_code(DPBus)
         time = int(clock.time/100)
 
         rls = reg_low_select
-        comb = f'{time} {addr:03x}: {d2d3Map[d2d3]:12s} {aluCode:21s} {fbr:9s} RL{rls:1d}'
+        comb = f'{time} {addr:03x}: {d2d3Map[d2d3]:12s} {aluCode:24s} {fbr:9s} RL{rls:1d}'
         seq = f'{e6Map[e6]} {h11Map[h11]} {k11Map[k11]} {pcIncMap[pcInc]} {e7Map[e7]}  {inst}'
         return f'{comb} | {seq}'
 
