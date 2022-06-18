@@ -7,7 +7,7 @@ OP_CODES = {
     0x11: 'BNL', 0x12: 'BF', 0x13: 'BNF', 0x14: 'BZ', 0x15: 'BNZ', 0x16: 'BM', 0x17: 'BP', 0x18: 'BGZ',
     0x19: 'BLE', 0x1A: 'BS1', 0x1B: 'BS2', 0x1C: 'BS3', 0x1D: 'BS4', 0x1E: 'BTM?', 0x1F: 'BEP?', 0x20: 'INR',
     0x21: 'DCR', 0x22: 'CLR', 0x23: 'IVR', 0x24: 'SRR', 0x25: 'SLR', 0x26: 'RRR', 0x27: 'RLR', 0x28: 'INAL',
-    0x29: 'DCAL', 0x2A: 'CLAL', 0x2B: 'IVAL', 0x2C: 'SRAL', 0x2D: 'SLAL', 0x2E: '?', 0x2F: '?', 0x30: 'INR',
+    0x29: 'DCAL', 0x2A: 'CLAL', 0x2B: 'IVAL', 0x2C: 'SRAL', 0x2D: 'SLAL', 0x2E: '?', 0x2F: '?', 0x30: 'INRW',
     0x31: 'DCR', 0x32: 'CLR', 0x33: 'IVR', 0x34: 'SRR', 0x35: 'SLR', 0x36: 'RRR', 0x37: 'RLR', 0x38: 'INAW',
     0x39: 'DCAW', 0x3A: 'CLAW', 0x3B: 'IVAW', 0x3C: 'SRAW', 0x3D: 'SLAW', 0x3E: 'INX', 0x3F: 'DCX',
     0x40: 'ADD', 0x41: 'SUB', 0x42: 'AND', 0x43: 'ORI', 0x44: 'ORE', 0x45: 'XFR', 0x46: '?', 0x47: '??',
@@ -147,13 +147,13 @@ class VCDFile(object):
             result[k] = v
         return result
 
-e6Map = {0:'', 1:'RR<-FBus', 2:'RI<-FBus', 3:'', 4:'', 5:'MR<>WR', 6:'', 7:'LoadCC'}
-k11Map = {0:'', 1:'', 2:'', 3:'Load F11', 4:'R[]<-', 5:'', 6:'WAR.LO<-', 7:'WrBus'}
+e6Map = {0:'', 1:'RR<-FBus', 2:'RI<-FBus', 3:'e6.3', 4:'e6.4', 5:'MR<>WR', 6:'', 7:'LoadCC'}
+k11Map = {0:'', 1:'k11.1', 2:'', 3:'Load F11', 4:'R[]<-', 5:'', 6:'WAR.LO<-', 7:'WrBus'}
 pcIncMap = {0:'', 1:'PC++'}
-d2d3Map = {0:'D=Swap', 1:'D=Reg', 2:'D=MAR.HI', 3:'D=MAR.LO', 4:'', 5:'', 6:'', 7:'', 8:'',
-            9:'D=CC', 10:'D=BusIn', 11:'', 12:'', 13:'D=const', 14:'', 15:''}
-h11Map = {0:'StBus', 1:'', 2:'', 3:'WAR.HI', 4:'', 5:'', 6:'', 7:''}
-e7Map = {0:'', 1:'', 2:'LoadFl', 3:'BusR<-Bus', 4:'', 5:'', 6:'', 7:''}
+d2d3Map = {0:'D=Swap', 1:'D=Reg', 2:'D=MAR.HI', 3:'D=MAR.LO', 4:'d2d3.4', 5:'d2d3.5', 6:'d2d3.6', 7:'d2d3.7', 8:'d2d3.8',
+            9:'D=CC', 10:'D=BusIn', 11:'d2d3.11', 12:'d2d3.12', 13:'D=const', 14:'d2d3.14', 15:'d2d3.15'}
+h11Map = {0:'StBus', 1:'h11.1', 2:'h11.2', 3:'WAR.HI', 4:'h11.4', 5:'h11.5', 6:'h11.6', 7:'h11.7'}
+e7Map = {0:'', 1:'e7.1', 2:'LoadFl', 3:'BusR<-Bus', 4:'e7.4', 5:'e7.5', 6:'e7.6', 7:'e7.7'}
 
 ALU_SRC_MAP = [['A', 'Q'], ['A', 'B'], ['0', 'Q'], ['0', 'B'], ['0', 'A'], ['D', 'A'], ['D', 'Q'], ['D', '0']]
 ALU_OP_MAP = ['{r}+{s}', '{s}-{r}', '{r}-{s}', '{r}|{s}', '{r}&{s}', '(~{r})&{s}', '{r}^{s}', '~({r}^{s})']
@@ -226,11 +226,12 @@ class Disassembler(object):
         result_register = self.getSignal(sig, 'cpu.result_register').value
         alu0_yout = self.getSignal(sig, 'cpu.alu0_yout').value & 0xf
         alu1_yout = self.getSignal(sig, 'cpu.alu1_yout').value & 0xf
-        bus_read = self.getSignal(sig, 'cpu.bus_read').value & 0xf
+        bus_read = self.getSignal(sig, 'cpu.bus_read').value
         alu_out = (alu1_yout << 4) | alu0_yout
         mar_hi = (memory_address >> 8) & 0xff
         mar_lo = memory_address & 0xff
         reg_low_select = self.getSignal(sig, 'cpu.reg_low_select').value
+        reg_ram_addr = self.getSignal(sig, 'cpu.reg_ram_addr').value
 
         if k11 == 6:
             k11Map[6] = f'WR.LO<-RR({result_register:02x})'
@@ -241,7 +242,7 @@ class Disassembler(object):
             if e6 == 5:
                 h11Map[3] = f'WR.HI<-MR.HI({mar_hi:02x})'
         if d2d3 == 1:
-            d2d3Map[1] = f'D=R[{register_index:02x}]({reg_ram_data_out:02x})'
+            d2d3Map[1] = f'D=R[{reg_ram_addr:02x}]({reg_ram_data_out:02x})'
         if d2d3 == 10:
             d2d3Map[10] = f'D=BusR({bus_read:02x})'
         if d2d3 == 13:
@@ -256,7 +257,7 @@ class Disassembler(object):
         if pcInc == 1:
             pcIncMap[1] = f'PC++({memory_address:04x})'
         if k11 == 4:
-            k11Map[4] = f'R[{register_index:02x}]<-RR({result_register:02x})'
+            k11Map[4] = f'R[{reg_ram_addr:02x}]<-RR({result_register:02x})'
         alu_a = self.getSignal(sig, 'cpu.alu_a').value
         alu_b = self.getSignal(sig, 'cpu.alu_b').value
         alu_src = self.getSignal(sig, 'cpu.alu_src').value

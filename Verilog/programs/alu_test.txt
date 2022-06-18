@@ -1,13 +1,13 @@
 01 // NOP
 01 // NOP
-90 // LDAW #ff00
+90 // LDAW #fffd
 ff
 fd
 01 // NOP
 30 // INRW A, 1
 00
-14 // BZ 4
-04
+14 // BZ 3
+03
 71 // JMP #ff05
 ff
 05
