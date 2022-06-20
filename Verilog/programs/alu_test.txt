@@ -1,5 +1,22 @@
 01 // NOP
 01 // NOP
+80 // LDAL #fd
+fd
+01 // NOP
+20 // INR AL, 1
+10
+14 // BZ 3
+03
+71 // JMP #ff05
+ff
+05
+80 // LDAL 'A'
+41
+a1 // STAL #5a00
+5a
+00
+01 // NOP
+01 // NOP
 90 // LDAW #fffd
 ff
 fd
@@ -8,26 +25,11 @@ fd
 00
 14 // BZ 3
 03
-71 // JMP #ff05
+71 // JMP #ff17
 ff
-05
-80 // LDAL 'P'
-50
-a1 // STAL #5a00
-5a
-00
-80 // LDAL 'A'
-41
-a1 // STAL #5a00
-5a
-00
-80 // LDAL 'S'
-53
-a1 // STAL #5a00
-5a
-00
-80 // LDAL 'S'
-53
+17
+80 // LDAL 'B'
+42
 a1 // STAL #5a00
 5a
 00
@@ -42,8 +44,6 @@ a1 // STAL #5b00 (sim_end <= 1)
 5b
 00
 01 // NOP
-01
-01
 01
 01
 01

@@ -152,7 +152,7 @@ k11Map = {0:'', 1:'k11.1', 2:'', 3:'Load F11', 4:'R[]<-', 5:'', 6:'WAR.LO<-', 7:
 pcIncMap = {0:'', 1:'PC++'}
 d2d3Map = {0:'D=Swap', 1:'D=Reg', 2:'D=MAR.HI', 3:'D=MAR.LO', 4:'d2d3.4', 5:'d2d3.5', 6:'d2d3.6', 7:'d2d3.7', 8:'d2d3.8',
             9:'D=CC', 10:'D=BusIn', 11:'d2d3.11', 12:'d2d3.12', 13:'D=const', 14:'d2d3.14', 15:'d2d3.15'}
-h11Map = {0:'StBus', 1:'h11.1', 2:'h11.2', 3:'WAR.HI', 4:'h11.4', 5:'h11.5', 6:'h11.6', 7:'h11.7'}
+h11Map = {0:'StBus', 1:'h11.1', 2:'h11.2', 3:'WAR.HI', 4:'h11.4', 5:'h11.5', 6:'h11.6', 7:'LDSwap'}
 e7Map = {0:'', 1:'e7.1', 2:'LoadFl', 3:'BusR<-Bus', 4:'e7.4', 5:'e7.5', 6:'e7.6', 7:'e7.7'}
 
 ALU_SRC_MAP = [['A', 'Q'], ['A', 'B'], ['0', 'Q'], ['0', 'B'], ['0', 'A'], ['D', 'A'], ['D', 'Q'], ['D', '0']]
@@ -230,8 +230,10 @@ class Disassembler(object):
         alu_out = (alu1_yout << 4) | alu0_yout
         mar_hi = (memory_address >> 8) & 0xff
         mar_lo = memory_address & 0xff
-        reg_low_select = self.getSignal(sig, 'cpu.reg_low_select').value
+        bit53 = self.getSignal(sig, 'cpu.bit53').value
         reg_ram_addr = self.getSignal(sig, 'cpu.reg_ram_addr').value
+        flags_register = self.getSignal(sig, 'cpu.flags_register').value
+        swap_register = self.getSignal(sig, 'cpu.swap_register').value
 
         if k11 == 6:
             k11Map[6] = f'WR.LO<-RR({result_register:02x})'
@@ -241,6 +243,10 @@ class Disassembler(object):
             h11Map[3] = f'WR.HI<-RR({result_register:02x})'
             if e6 == 5:
                 h11Map[3] = f'WR.HI<-MR.HI({mar_hi:02x})'
+        if h11 == 7:
+            h11Map[7] = f'Swap<-D({DPBus:02x})'
+        if d2d3 == 0:
+            d2d3Map[0] = f'D=Swap({swap_register:02x})'
         if d2d3 == 1:
             d2d3Map[1] = f'D=R[{reg_ram_addr:02x}]({reg_ram_data_out:02x})'
         if d2d3 == 10:
@@ -267,14 +273,16 @@ class Disassembler(object):
         aluCode = self.getALUCode(alu_a, alu_b, alu_op, alu_src, alu_dest, alu0_cin)
         if k11 == 3:
             k11Map[3] = f'F11<-aluB({alu_b:1x})'
+        if e7 == 2:
+            e7Map[2] = f'LoadFl({flags_register:02x})'
 
         inst = ''
         if addr == 0x104:
             inst = get_op_code(DPBus)
         time = int(clock.time/100)
 
-        rls = reg_low_select
-        comb = f'{time} {addr:03x}: {d2d3Map[d2d3]:12s} {aluCode:24s} {fbr:9s} RL{rls:1d}'
+        rls = bit53
+        comb = f'{time} {addr:03x}: {d2d3Map[d2d3]:12s} {aluCode:24s} {fbr:9s} 53_{rls:1d}'
         seq = f'{e6Map[e6]} {h11Map[h11]} {k11Map[k11]} {pcIncMap[pcInc]} {e7Map[e7]}  {inst}'
         return f'{comb} | {seq}'
 

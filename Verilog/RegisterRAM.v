@@ -4,7 +4,7 @@ module RegisterRAM(input wire clock, input wire write_en, input wire [7:0] addre
 
     integer i;
     initial begin
-        for (i=0; i<256; i=i+1) memory[i] = 8'hfe;
+        for (i=0; i<256; i=i+1) memory[i] = 8'hf5;
     end
 
     reg [7:0] memory[0:255];

@@ -51,11 +51,10 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     CodeROM uc_rom(uc_rom_address, uc_rom_data);
 
     // Synchronous Register RAM
-    wire reg_low_select = pipeline[53];
-    // This works with word ops, but not byte ops
-    // wire [7:0] reg_ram_addr = register_index | {7'b0, ~reg_low_select};
-    // This works with byte ops
-    wire [7:0] reg_ram_addr = register_index;
+    wire bit53 = pipeline[53];
+    wire reg_low_select = bit53;
+    // High/low register select, D10 74LS02 NOR gate
+    wire [7:0] reg_ram_addr = { register_index[7:1], ~(reg_low_select | register_index[0]) };
     wire rr_write_en = k11 == 4;
     wire [7:0] reg_ram_data_in = result_register;
     wire [7:0] reg_ram_data_out;
@@ -304,7 +303,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 4: work_address <= work_address + 1; // WAR increment
                 5: memory_address <= memory_address + 1; // MAR increment
                 6: ; // Select FBus source (combinational)
-                7: ;
+                7: swap_register <= { DPBus[3:0], DPBus[7:4] };
             endcase
 
             writeEnBus = 0;
