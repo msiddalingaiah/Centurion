@@ -7,7 +7,7 @@ a1 // STAL #5c00 (LEDPanel)
 5c
 00
 20 // INR AL, 1
-00
+10
 0e //DLY (0e)
 0e //DLY (0e)
 0e //DLY (0e)
