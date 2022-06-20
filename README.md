@@ -26,6 +26,8 @@ The simulation output is saved in the ```Verilog/vcd``` directory. It can be vie
 
 ![Centurion1](images/Centurion3.gif "Running code")
 
+The iCE40 HX8K FPGA has 32 4kBit synchronous RAM blocks. Most of the block RAM is used for microcode (2k x 56-bit). Storing microcode in internal block RAM reduces the need for external storage, which is convenient. One RAM block is used for register RAM (256 bytes) and one more is used for a small amount of memory (instructions and data). External RAM will be connected in the future, limited internal block RAM is sufficient for testing.
+
 This version is operating with a CPU clock of 5MHz, which is the estimated the clock rate of the original Centurion CPU6. This design can operate as high as 30MHz, many times faster the original. The assembly code used for the demonstration program is below:
 
 ```
