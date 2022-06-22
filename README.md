@@ -1,6 +1,6 @@
 # Centurion
 
-This directory contains an [HDL](https://en.wikipedia.org/wiki/Hardware_description_language) implementation of the [Centurion Minicomputer](https://github.com/Nakazoto/CenturionComputer/wiki).
+This directory contains an [FPGA](https://en.wikipedia.org/wiki/Field-programmable_gate_array) implementation of the [Centurion Minicomputer](https://github.com/Nakazoto/CenturionComputer/wiki).
 
 The Centurion was an 8-bit minicomputer designed and built by Warrex Computer Corporation, headquartered in Richardson, Texas. The company operated from the mid 1970's into the mid 1980's, delivering approximately 1000 computers to customers in Texas, Oklahoma, and others. The computers were used for accounting and other business functions in medium sized companies.
 

@@ -2,7 +2,29 @@
 `timescale 1 ns/10 ps  // time-unit = 1 ns, precision = 10 ps
 `include "CPU6.v"
 `include "Clock.v"
-`include "Memory.v"
+
+module Memory(input wire clock, input wire [15:0] address, input wire write_en, input wire [7:0] data_in,
+    output reg [7:0] data_out);
+
+    reg [7:0] ram_cells[0:255];
+
+    wire [7:0] mapped_address = address[7:0];
+
+    always @(*) begin
+        case (address)
+            16'hfd00: data_out = 8'h71; // Reset vector, JMP 1000
+            16'hfd01: data_out = 8'h10;
+            16'hfd02: data_out = 8'h00;
+            default: data_out = ram_cells[mapped_address];
+        endcase
+    end
+
+    always @(posedge clock) begin
+        if (write_en == 1 && address[15:8] == 8'h01) begin
+            ram_cells[mapped_address] <= data_in;
+        end
+    end
+endmodule
 
 module CPU6TestBench;
     initial begin

@@ -1,38 +1,63 @@
 01 // NOP
 01 // NOP
-80 // LDAL #fd
-fd
+80 // LDAL #fc
+fc
 01 // NOP
 20 // INR AL, 1
 10
-14 // BZ 3
-03
-71 // JMP #ff05
-ff
-05
-80 // LDAL 'A'
+14 // BZ 8
+08
+C0 // LDBL 'A'
 41
-a1 // STAL #5a00
+e1 // STBL #5a00
 5a
 00
+71 // JMP #1005
+10
+05
 01 // NOP
 01 // NOP
-90 // LDAW #fffd
+90 // LDAW #fffc
 ff
-fd
+fc
 01 // NOP
 30 // INRW A, 1
 00
-14 // BZ 3
-03
-71 // JMP #ff17
-ff
-17
-80 // LDAL 'B'
+14 // BZ 8
+08
+c0 // LDBL 'B'
 42
-a1 // STAL #5a00
+e1 // STBL #5a00
 5a
 00
+71 // JMP #1017
+10
+17
+80 // LDAL 4
+04
+21 // DCR AL, 1
+10
+14 // BZ 8
+08
+c0 // LDBL 'C'
+43
+e1 // STBL #5a00
+5a
+00
+71 // JMP #1025
+10
+25
+80 // LDAL 03
+03
+c0 // LDBL 'D'
+44
+e1 // STBL #5a00
+5a
+00
+21 // DCR AL, 1
+10
+15 // BNZ f7
+f7
 80 // LDAL '\n'
 0a
 a1 // STAL #5a00
@@ -44,20 +69,6 @@ a1 // STAL #5b00 (sim_end <= 1)
 5b
 00
 01 // NOP
-01
-01
-01
-01
-01
-01
-01
-01
-01
-01
-01
-01
-01
-01
 01
 01
 01

@@ -5,16 +5,16 @@ ff
 01 // NOP
 20 // INR AL, 1
 10
-15 // BNZ 3
-03
-71 // JMP #ff05
-ff
-05
+15 // BNZ 8
+08
 80 // LDAL 'P'
 50
 a1 // STAL #5a00
 5a
 00
+71 // JMP #1005
+10
+05
 80 // LDAL 'A'
 41
 a1 // STAL #5a00
