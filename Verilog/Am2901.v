@@ -2,7 +2,9 @@
 module Am2901(input wire clock, input wire [3:0] din, input wire [3:0] aSel,
     input wire [3:0] bSel, input wire [2:0] aluSrc, input wire [2:0] aluOp,
     input wire [2:0] aluDest, input cin, output reg[3:0] yout, output reg cout,
-    output reg fzero, output reg f3, output reg ovr);
+    output reg fzero, output reg f3, output reg ovr,
+    input wire q0_in, input wire ram0_in, input wire q3_in, input wire ram3_in,
+    output reg q0_out, output reg ram0_out, output reg q3_out, output reg ram3_out);
 
     integer i;
     initial begin
@@ -70,15 +72,20 @@ module Am2901(input wire clock, input wire [3:0] din, input wire [3:0] aSel,
         writeRam = 0;
         fvalue = f[3:0];
 
+        q0_out = q[0];
+        ram0_out = fvalue[0];
+        q3_out = q[3];
+        ram3_out = fvalue[3];
+
         case (aluDest)
             0: begin yout = fvalue; qv = fvalue; writeQ = 1; end
             1: begin yout = fvalue; end
             2: begin yout = a; bv = fvalue; writeRam = 1; end
             3: begin yout = fvalue; bv = fvalue; writeRam = 1; end
-            4: begin yout = fvalue; qv = q >> 1; bv = fvalue >> 1; writeRam = 1; writeQ = 1; end
-            5: begin yout = fvalue; bv = fvalue >> 1; writeRam = 1; end
-            6: begin yout = fvalue; qv = q << 1; bv = fvalue << 1; writeRam = 1; writeQ = 1; end
-            7: begin yout = fvalue; bv = fvalue << 1; writeRam = 1; end
+            4: begin yout = fvalue; qv = { q3_in, q[3:1] }; bv = { ram3_in, fvalue[3:1] }; writeRam = 1; writeQ = 1; end
+            5: begin yout = fvalue; bv = { ram3_in, fvalue[3:1] }; writeRam = 1; end
+            6: begin yout = fvalue; qv = { q[2:0], q0_in }; bv = { fvalue[2:0], ram0_in }; writeRam = 1; writeQ = 1; end
+            7: begin yout = fvalue; bv = { fvalue[2:0], ram0_in }; writeRam = 1; end
         endcase
     end
 

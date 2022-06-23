@@ -42,11 +42,13 @@ module CPU6TestBench;
         $readmemh("programs/alu_test.txt", ram.ram_cells);
         sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
         wait(sim_end == 1);
+        // $readmemh("programs/cylon.txt", ram.ram_cells);
+        // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
         // $readmemh("programs/sjs_4700.txt", ram.ram_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
         // $readmemh("programs/blink.txt", ram.ram_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
-        // #200000 $finish;
+        // #400000 $finish;
         $display("All done!");
         $finish;
     end

@@ -7,7 +7,7 @@ module BlockRAM(input wire clock, input wire [15:0] address, input wire write_en
     output wire [7:0] data_out);
 
     initial begin
-        $readmemh("programs/blink.txt", ram_cells);
+        $readmemh("programs/cylon.txt", ram_cells);
     end
 
     reg [7:0] ram_cells[0:255];

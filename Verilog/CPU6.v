@@ -138,8 +138,12 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     wire alu0_f0;
     wire alu0_f3;
     wire alu0_ovr;
+    wire alu0_q0_in, alu0_ram0_in, alu0_q3_in, alu0_ram3_in;
+    wire alu0_q0_out, alu0_ram0_out, alu0_q3_out, alu0_ram3_out;
     Am2901 alu0(clock, alu0_din, alu_a, alu_b, alu_src, alu_op, alu_dest, alu0_cin,
-        alu0_yout, alu0_cout, alu0_f0, alu0_f3, alu0_ovr);
+        alu0_yout, alu0_cout, alu0_f0, alu0_f3, alu0_ovr,
+        alu0_q0_in, alu0_ram0_in, alu0_q3_in, alu0_ram3_in,
+        alu0_q0_out, alu0_ram0_out, alu0_q3_out, alu0_ram3_out);
 
     // Shift/carry select
     wire [1:0] shift_carry = pipeline[52:51];
@@ -152,8 +156,23 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     wire alu1_f0;
     wire alu1_f3;
     wire alu1_ovr;
+    wire alu1_q0_in, alu1_ram0_in, alu1_q3_in, alu1_ram3_in;
+    wire alu1_q0_out, alu1_ram0_out, alu1_q3_out, alu1_ram3_out;
     Am2901 alu1(clock, alu1_din, alu_a, alu_b, alu_src, alu_op, alu_dest, alu1_cin,
-        alu1_yout, alu1_cout, alu1_f0, alu1_f3, alu1_ovr);
+        alu1_yout, alu1_cout, alu1_f0, alu1_f3, alu1_ovr,
+        alu1_q0_in, alu1_ram0_in, alu1_q3_in, alu1_ram3_in,
+        alu1_q0_out, alu1_ram0_out, alu1_q3_out, alu1_ram3_out);
+
+    assign alu1_q0_in = alu0_q3_out;
+    assign alu1_ram0_in = alu0_ram3_out;
+    assign alu0_q3_in = alu1_q0_out;
+    assign alu0_ram3_in = alu1_ram0_out;
+
+    // TBD H6 mux rotate left, rotate right
+    assign alu1_q3_in = 0;
+    assign alu1_ram3_in = 0;
+    assign alu0_q0_in = 0;
+    assign alu0_ram0_in = 0;
 
     // Decoders
     // d2d3 is decoded before pipeline, but outputs are registered.
