@@ -63,7 +63,6 @@ class NavFrame(ttk.LabelFrame):
 
     def stepn(self):
         try:
-            self.inputFrame.setValues()
             n = int(self.nClocks.get())
             while n > 0:
                 self.index += 1
@@ -136,10 +135,11 @@ class App(tk.Tk):
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=2)
         self.columnconfigure(2, weight=2)
-        internal = {'μPC':'cpu.uc_rom_address', 'FBus': 'cpu.FBus', 'DPBus': 'cpu.DPBus'}
-        outputs = {'MAR': 'cpu.memory_address'}
+        internal = {'μPC':'cpu.uc_rom_address', 'FBus': 'cpu.FBus', 'DPBus': 'cpu.DPBus',
+            'Result':'cpu.result_register', 'Flags':'cpu.flags_register', 'Swap':'cpu.swap_register'}
+        external = {'MAR': 'cpu.memory_address', 'Data In':'cpu.dataInBus'}
         internFrame = OutputFrame(self, 'Internal Signals', internal)
-        outputFrame = OutputFrame(self, 'Output Signals', outputs)
+        outputFrame = OutputFrame(self, 'Output Signals', external)
         navFrame = NavFrame(self, [internFrame, outputFrame])
         navFrame.grid(column=0, row=0, padx=2, pady=2)
         internFrame.grid(column=1, row=0, padx=2, pady=2, sticky=tk.N)
