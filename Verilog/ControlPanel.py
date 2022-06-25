@@ -12,33 +12,43 @@ class NavFrame(ttk.LabelFrame):
         super().__init__(container, text='Navigate')
         self.sigFrames = sigframes
         self.running = False
-        ttk.Button(self, text='Reset', command=self.reset).grid(column=0, row=0, padx=5, pady=2)
+        self.index = 0
+        tk.Label(self, text='Cycle', font=('Consolas', 12)).grid(column=0, row=0, sticky=tk.E)
+        self.cycle = tk.Label(self, text='0', font=('Digital-7 Mono', 20), fg='#0000ff')
+        self.cycle.grid(column=1, row=0, sticky=tk.E)
+
+        ttk.Button(self, text='Reset', command=self.reset).grid(column=0, row=1, padx=5, pady=2)
         self.runBtn = ttk.Button(self, text='Run', command=self.run)
-        self.runBtn.grid(column=0, row=1, padx=5, pady=2)
+        self.runBtn.grid(column=0, row=2, padx=5, pady=2)
         self.stopBtn = ttk.Button(self, text='Stop', command=self.stop, state='disabled')
-        self.stopBtn.grid(column=0, row=2, padx=5, pady=2)
-        self.stepBtn = ttk.Button(self, text='Step', command=self.step)
-        self.stepBtn.grid(column=0, row=3, padx=5, pady=2)
+        self.stopBtn.grid(column=0, row=3, padx=5, pady=2)
+
+        self.prevBtn = ttk.Button(self, text='Prev', command=self.prev)
+        self.prevBtn.grid(column=0, row=4, padx=5, pady=2)
+
+        self.nextBtn = ttk.Button(self, text='Next', command=self.next)
+        self.nextBtn.grid(column=0, row=5, padx=5, pady=2)
         self.stepNBtn = ttk.Button(self, text='Step #', command=self.stepn)
-        self.stepNBtn.grid(column=0, row=4, padx=5, pady=2)
+        self.stepNBtn.grid(column=0, row=6, padx=5, pady=2)
         self.nClocks = ttk.Entry(self, width=5)
         self.nClocks.insert(0, '1')
         self.nClocks.focus()
-        self.nClocks.grid(column=1, row=4, padx=5, pady=2, sticky=tk.W)
-        self.index = 0
+        self.nClocks.grid(column=1, row=6, padx=5, pady=2, sticky=tk.W)
 
     def timer(self):
         self.winfo_toplevel().after(TIMER_TICK_MS, self.timer)
         if self.running:
-            self.step()
+            self.next()
         else:
-            self.stepBtn.configure(state='normal')
+            self.prevBtn.configure(state='normal')
+            self.nextBtn.configure(state='normal')
             self.stepNBtn.configure(state='normal')
             self.runBtn.configure(state='normal')
             self.stopBtn.configure(state='disabled')
             self.nClocks.configure(state='normal')
 
     def updateAll(self):
+        self.cycle.config(text = str(self.index))
         for f in self.sigFrames:
             f.doUpdate(self.index)
 
@@ -48,7 +58,8 @@ class NavFrame(ttk.LabelFrame):
 
     def run(self):
         self.running = True
-        self.stepBtn.configure(state='disabled')
+        self.prevBtn.configure(state='disabled')
+        self.nextBtn.configure(state='disabled')
         self.stepNBtn.configure(state='disabled')
         self.runBtn.configure(state='disabled')
         self.stopBtn.configure(state='normal')
@@ -57,7 +68,12 @@ class NavFrame(ttk.LabelFrame):
     def stop(self):
         self.running = False
 
-    def step(self):
+    def prev(self):
+        if self.index > 0:
+            self.index -= 1
+            self.updateAll()
+
+    def next(self):
         self.index += 1
         self.updateAll()
 
@@ -89,7 +105,7 @@ class VectorIndicator(tk.Label):
     def __init__(self, container, signalName, size):
         # TrueType font from https://www.fontspace.com/digital-7-font-f7087
         fontValue = ('Digital-7 Mono', 20)
-        super().__init__(container, text='', font=fontValue, fg='#f00')
+        super().__init__(container, text='', font=fontValue, fg='#ff0000')
         digits = (size+3) >> 2
         self.format = f'%0{digits}X'
         self.signalName = signalName
@@ -113,7 +129,7 @@ class OutputFrame(ttk.LabelFrame):
             else:
                 ind = VectorIndicator(self, signalName, len(signal))
             self.indicators.append(ind)
-            ind.grid(column=1, row=row, sticky=tk.W)
+            ind.grid(column=1, row=row, sticky=tk.E)
             row += 1
         self.doUpdate(0)
 
@@ -127,7 +143,7 @@ class App(tk.Tk):
         super().__init__()
         self.signals = signals
         self.signalTagMap = signalTagMap
-        self.title('Control Panel')
+        self.title('CPU6 Simulation Replay')
         #self.geometry('500x200')
         self.resizable(True, True)
         # windows only (remove the minimize/maximize button)
@@ -136,8 +152,10 @@ class App(tk.Tk):
         self.columnconfigure(1, weight=2)
         self.columnconfigure(2, weight=2)
         internal = {'μPC':'cpu.uc_rom_address', 'FBus': 'cpu.FBus', 'DPBus': 'cpu.DPBus',
-            'Result':'cpu.result_register', 'Flags':'cpu.flags_register', 'Swap':'cpu.swap_register'}
-        external = {'MAR': 'cpu.memory_address', 'Data In':'cpu.dataInBus'}
+            'Result':'cpu.result_register', 'Flags':'cpu.flags_register', 'Swap':'cpu.swap_register',
+            'Reg. Index':'cpu.register_index', 'Work Address': 'cpu.work_address' }
+        external = {'Bus Address': 'cpu.memory_address', 'Data In':'cpu.dataInBus', 'Data Out':'cpu.dataOutBus',
+            'Write En':'cpu.writeEnBus'}
         internFrame = OutputFrame(self, 'Internal Signals', internal)
         outputFrame = OutputFrame(self, 'Output Signals', external)
         navFrame = NavFrame(self, [internFrame, outputFrame])
