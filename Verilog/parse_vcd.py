@@ -51,7 +51,8 @@ class SignalDef(object):
         self.size, self.tag, self.name = 0, '', ''
         if len(cols) < 4:
             return
-        self.size, self.tag, self.name = cols[2:2+3]
+        size, self.tag, self.name = cols[2:2+3]
+        self.size = int(size)
 
     def isValid(self):
         return self.size != 0
@@ -75,6 +76,9 @@ class Signal(object):
 
     def getTag(self):
         return self.sigDef.tag
+
+    def __len__(self):
+        return self.sigDef.size
 
     def __str__(self):
         return self.value
