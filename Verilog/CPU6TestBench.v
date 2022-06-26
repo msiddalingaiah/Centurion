@@ -12,9 +12,9 @@ module Memory(input wire clock, input wire [15:0] address, input wire write_en, 
 
     always @(*) begin
         case (address)
-            16'hfd00: data_out = 8'h71; // Reset vector, JMP 1000
-            16'hfd01: data_out = 8'h10;
-            16'hfd02: data_out = 8'h00;
+            16'hfd00: data_out = 8'h71; // Reset vector, JMP 8001
+            16'hfd01: data_out = 8'h80;
+            16'hfd02: data_out = 8'h01;
             default: data_out = ram_cells[mapped_address];
         endcase
     end
@@ -67,9 +67,9 @@ module CPU6TestBench;
     always @(posedge clock) begin
         if (writeEnBus == 1) begin
             // Pretend there's a UART here :-)
-            if (addressBus == 16'h5a00) $write("%s", data_c2r);
+            if (addressBus == 16'hf200) $write("%s", data_c2r);
             // A hack to stop simulation
-            if (addressBus == 16'h5b00 && data_c2r == 8'h5a) begin
+            if (addressBus == 16'hf900 && data_c2r == 8'h01) begin
                 sim_end <= 1;
             end
         end

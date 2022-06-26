@@ -9,36 +9,36 @@ ff
 08
 80 // LDAL 'P'
 50
-a1 // STAL #5a00
-5a
+a1 // STAL #f200
+f2
 00
 71 // JMP #1005
 10
 05
 80 // LDAL 'A'
 41
-a1 // STAL #5a00
-5a
+a1 // STAL #f200
+f2
 00
 80 // LDAL 'S'
 53
-a1 // STAL #5a00
-5a
+a1 // STAL #f200
+f2
 00
 80 // LDAL 'S'
 53
-a1 // STAL #5a00
-5a
+a1 // STAL #f200
+f2
 00
 80 // LDAL '\n'
 0a
-a1 // STAL #5a00
-5a
+a1 // STAL #f200
+f2
 00
-80 // LDAL #5a
-5a
-a1 // STAL #5b00 (sim_end <= 1)
-5b
+80 // LDAL #01
+01
+a1 // STAL #f900 (sim_end <= 1)
+f9
 00
 01 // NOP
 01

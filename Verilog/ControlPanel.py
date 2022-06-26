@@ -88,6 +88,50 @@ class NavFrame(ttk.LabelFrame):
             msg = f'Count is not an int: {self.nClocks.get()}'
             messagebox.showwarning(title='Input Error', message=msg)
 
+ALU_SRC_MAP = [['A', 'Q'], ['A', 'B'], ['0', 'Q'], ['0', 'B'], ['0', 'A'], ['D', 'A'], ['D', 'Q'], ['D', '0']]
+ALU_OP_MAP = ['{r}+{s}', '{s}-{r}', '{r}-{s}', '{r}|{s}', '{r}&{s}', '(~{r})&{s}', '{r}^{s}', '~({r}^{s})']
+ALU_MEM_DEST_MAP = ['', '', 'r{b}={f}', 'r{b}={f}', 'r{b}=({f})>>1', 'r{b}=({f})>>1', 'r{b}=({f})<<1', 'r{b} =({f})<<1']
+ALU_Q_DEST_MAP = ['Q = {f}', '', '', '', 'Q>>=1', '', 'Q<<=1', '']
+ALU_OUT_MAP = ['Y={f}', 'Y={f}', 'Y={a}', 'Y={f}', 'Y={f}', 'Y={f}', 'Y={f}', 'Y={f}']
+
+class ALUFrame(ttk.LabelFrame):
+    def __init__(self, container, title):
+        super().__init__(container, text=title)
+        self.app = container
+        fontName = ('Consolas', 12)
+        self.aluLabel = tk.Label(self, text='', font=fontName)
+        self.aluLabel.grid(column=0, row=0, sticky=tk.E)
+        self.doUpdate(0)
+
+    def doUpdate(self, index):
+        alu_a = self.app.getSignal(index, 'cpu.alu_a').value
+        alu_b = self.app.getSignal(index, 'cpu.alu_b').value
+        alu_src = self.app.getSignal(index, 'cpu.alu_src').value
+        alu_op = self.app.getSignal(index, 'cpu.alu_op').value
+        alu_dest = self.app.getSignal(index, 'cpu.alu_dest').value
+        alu0_cin = self.app.getSignal(index, 'cpu.alu0_cin').value
+        aluCode = self.getALUCode(alu_a, alu_b, alu_op, alu_src, alu_dest, alu0_cin).strip()
+        self.aluLabel.config(text = f'{aluCode:25s}')
+
+    def getALUCode(self, aluA, aluB, aluOp, aluSrc, aluDest, cin):
+        r, s = ALU_SRC_MAP[aluSrc]
+        if r == 'A':
+            r = f'r{aluA}'
+        elif r == 'B':
+            r = f'r{aluB}'
+        if s == 'A':
+            s = f'r{aluA}'
+        elif s == 'B':
+            s = f'r{aluB}'
+        f = ALU_OP_MAP[aluOp].format(r=r, s=s)
+        mem = ALU_MEM_DEST_MAP[aluDest].format(b=aluB, f=f)
+        q = ALU_Q_DEST_MAP[aluDest].format(f=f)
+        a = f'r{aluA}'
+        y = ALU_OUT_MAP[aluDest].format(f=f, a=a)
+        if (aluOp == 0 or aluOp == 1) and cin == 1:
+            return f'{mem}+{cin} {q} {y}+{cin}'
+        return f'{mem} {q} {y}'
+
 class SignalIndicator(tk.Canvas):
     def __init__(self, container, signalName, w=15, h=15):
         super().__init__(container, width=w, height=h)
@@ -153,15 +197,18 @@ class App(tk.Tk):
         self.columnconfigure(2, weight=2)
         internal = {'μPC':'cpu.uc_rom_address', 'FBus': 'cpu.FBus', 'DPBus': 'cpu.DPBus',
             'Result':'cpu.result_register', 'Flags':'cpu.flags_register', 'Swap':'cpu.swap_register',
-            'Reg. Index':'cpu.register_index', 'Work Address': 'cpu.work_address' }
+            'Reg. Index':'cpu.register_index', 'Work Address': 'cpu.work_address',
+            'ALU 1 Q':'alu1.q', 'ALU 0 Q':'alu0.q' }
         external = {'Bus Address': 'cpu.memory_address', 'Data In':'cpu.dataInBus', 'Data Out':'cpu.dataOutBus',
             'Write En':'cpu.writeEnBus'}
         internFrame = OutputFrame(self, 'Internal Signals', internal)
+        aluFrame = ALUFrame(self, 'ALU')
         outputFrame = OutputFrame(self, 'Output Signals', external)
-        navFrame = NavFrame(self, [internFrame, outputFrame])
+        navFrame = NavFrame(self, [internFrame, outputFrame, aluFrame])
         navFrame.grid(column=0, row=0, padx=2, pady=2)
-        internFrame.grid(column=1, row=0, padx=2, pady=2, sticky=tk.N)
-        outputFrame.grid(column=2, row=0, padx=3, pady=2, sticky=tk.N)
+        internFrame.grid(column=1, row=0, padx=2, pady=2, sticky=tk.NW)
+        aluFrame.grid(column=1, row=1, padx=2, pady=2, sticky=tk.N)
+        outputFrame.grid(column=2, row=0, padx=3, pady=2, sticky=tk.NW)
         # Assert reset after 500 ms
         self.after(500, navFrame.reset)
         self.after(TIMER_TICK_MS, navFrame.timer)

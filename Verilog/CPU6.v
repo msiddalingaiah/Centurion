@@ -106,7 +106,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
 
 
     // Sequencer 2 (microcode address bits 10:8)
-    wire [3:0] seq2_din = pipeline[26:24];
+    wire [3:0] seq2_din = { 1'b0 , pipeline[26:24] }; // only 3 bits are used
     wire [3:0] seq2_rin;
     wire seq2_s0 = ~(pipeline[31] & jsr_);
     wire seq2_s1 = ~(pipeline[32] & jsr_);
