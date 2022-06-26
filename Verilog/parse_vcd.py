@@ -151,12 +151,11 @@ class VCDFile(object):
             result[k] = v
         return result
 
-e6Map = {0:'', 1:'RR<-FBus', 2:'RI<-FBus', 3:'e6.3', 4:'e6.4', 5:'MR<>WR', 6:'', 7:'LoadCC'}
-k11Map = {0:'', 1:'k11.1', 2:'', 3:'Load F11', 4:'R[]<-', 5:'', 6:'WAR.LO<-', 7:'WrBus'}
-pcIncMap = {0:'', 1:'PC++'}
+e6Map = {0:'', 1:'RR<-FBus', 2:'RI<-FBus', 3:'e6.3', 4:'e6.4', 5:'MR<>WR', 6:'AR<-', 7:'LoadCC'}
+k11Map = {0:'', 1:'k11.1', 2:'k11.2', 3:'Load F11', 4:'R[]<-', 5:'k11.5', 6:'WAR.LO<-', 7:'WrBus'}
 d2d3Map = {0:'D=Swap', 1:'D=Reg', 2:'D=MAR.HI', 3:'D=MAR.LO', 4:'d2d3.4', 5:'d2d3.5', 6:'d2d3.6', 7:'d2d3.7', 8:'d2d3.8',
             9:'D=CC', 10:'D=BusIn', 11:'d2d3.11', 12:'d2d3.12', 13:'D=const', 14:'d2d3.14', 15:'d2d3.15'}
-h11Map = {0:'StBus', 1:'h11.1', 2:'h11.2', 3:'WAR.HI', 4:'h11.4', 5:'h11.5', 6:'h11.6', 7:'LDSwap'}
+h11Map = {0:'', 1:'StBusR', 2:'StBusW', 3:'WAR.HI', 4:'h11.4', 5:'h11.5', 6:'', 7:'LDSwap'}
 e7Map = {0:'', 1:'e7.1', 2:'LoadFl', 3:'BusR<-Bus', 4:'e7.4', 5:'e7.5', 6:'e7.6', 7:'e7.7'}
 
 ALU_SRC_MAP = [['A', 'Q'], ['A', 'B'], ['0', 'Q'], ['0', 'B'], ['0', 'A'], ['D', 'A'], ['D', 'Q'], ['D', '0']]
@@ -211,7 +210,7 @@ class Disassembler(object):
 
     def disassembleOne(self, sig):
         clock = self.getSignal(sig, 'cg0.clock')
-        addr = self.getSignal(sig, 'cpu.uc_rom_address').value
+        addr = self.getSignal(sig, 'cpu.uc_rom_address_pipe').value
         e6 = self.getSignal(sig, 'cpu.e6').value
         k11 = self.getSignal(sig, 'cpu.k11').value
         h11 = self.getSignal(sig, 'cpu.h11').value
@@ -222,7 +221,6 @@ class Disassembler(object):
         dataInBus = self.getSignal(sig, 'cpu.dataInBus').value
         map_rom_data = self.getSignal(sig, 'cpu.map_rom_data').value
         reg_ram_data_out = self.getSignal(sig, 'cpu.reg_ram_data_out').value
-        register_index = self.getSignal(sig, 'cpu.register_index').value
         register_index = self.getSignal(sig, 'cpu.register_index').value
         FBus = self.getSignal(sig, 'cpu.FBus').value
         DPBus = self.getSignal(sig, 'cpu.DPBus').value
@@ -247,6 +245,11 @@ class Disassembler(object):
             h11Map[3] = f'WR.HI<-RR({result_register:02x})'
             if e6 == 5:
                 h11Map[3] = f'WR.HI<-MR.HI({mar_hi:02x})'
+        fbr = f'F=Y({alu_out:02x})'
+        if h11 == 6:
+            fbr = f'F=Map({map_rom_data:02x})'
+        if h11 == 5:
+            h11Map[5] = f'PC++({memory_address:04x})'
         if h11 == 7:
             h11Map[7] = f'Swap<-D({DPBus:02x})'
         if d2d3 == 0:
@@ -257,15 +260,12 @@ class Disassembler(object):
             d2d3Map[10] = f'D=BusR({bus_read:02x})'
         if d2d3 == 13:
             d2d3Map[13] = f'D=const({constant:02x})'
-        fbr = f'F=Y({alu_out:02x})'
-        if h11 == 6:
-            fbr = f'F=Map({map_rom_data:02x})'
         if e6 == 1:
             e6Map[1] = f'RR<-F({FBus:02x})'
         if e6 == 2:
             e6Map[2] = f'RI<-F({FBus:02x})'
-        if pcInc == 1:
-            pcIncMap[1] = f'PC++({memory_address:04x})'
+        if e6 == 6:
+            e6Map[6] = f'AR<-F({FBus:02x})'
         if k11 == 4:
             k11Map[4] = f'R[{reg_ram_addr:02x}]<-RR({result_register:02x})'
         alu_a = self.getSignal(sig, 'cpu.alu_a').value
@@ -279,15 +279,16 @@ class Disassembler(object):
             k11Map[3] = f'F11<-aluB({alu_b:1x})'
         if e7 == 2:
             e7Map[2] = f'LoadFl({flags_register:02x})'
+        if e7 == 3:
+            e7Map[3] = f'BusR<-Bus({dataInBus:02x})'
 
         inst = ''
-        if addr == 0x104:
+        if addr == 0x103:
             inst = get_op_code(DPBus)
         time = int(clock.time/100)
 
-        rls = bit53
-        comb = f'{time} {addr:03x}: {d2d3Map[d2d3]:12s} {aluCode:24s} {fbr:9s} 53_{rls:1d}'
-        seq = f'{e6Map[e6]} {h11Map[h11]} {k11Map[k11]} {pcIncMap[pcInc]} {e7Map[e7]}  {inst}'
+        comb = f'{time} {addr:03x}: {d2d3Map[d2d3]:12s} {aluCode:24s} {fbr:9s}'
+        seq = f'{e6Map[e6]} {h11Map[h11]} {k11Map[k11]} {e7Map[e7]}  {inst}'
         return f'{comb} | {seq}'
 
 if __name__ == '__main__':

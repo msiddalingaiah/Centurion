@@ -21,9 +21,10 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
      * Instrumentation
      */
 
-    wire instruction_start = uc_rom_address == 11'h101;
+    wire instruction_start = uc_rom_address_pipe == 11'h101;
     reg [31:0] cycle_counter;
     assign pc_increment = h11 == 5 ? 1 : 0;
+    reg [10:0] uc_rom_address_pipe;
 
     /*
      * Rising edge triggered registers
@@ -269,8 +270,10 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             flags_register <= 0;
             writeEnBus <= 0;
             pipeline <= 56'h42abc618b781c0; // First microcode word. Synth prefers it this way.
+            uc_rom_address_pipe <= 0;
         end else begin
             pipeline <= uc_rom_data;
+            uc_rom_address_pipe <= uc_rom_address;
             if (instruction_start == 1) begin
                 cycle_counter <= 1;
             end else begin
