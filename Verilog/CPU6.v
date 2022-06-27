@@ -36,17 +36,25 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     /*
      * Rising edge triggered registers
      */
-    // Pipeline register
+    // Microcode pipeline F5/H5/J5/K5/L5/M5 74LS377, E5/D5 74LS174
     reg [55:0] pipeline;
-    // ALU flags register
+    // work_address B2/C2/B5/C5 74LS669
     reg [15:0] work_address;
+    // memory_address B1/C1/B6/C6 74LS669
     reg [15:0] memory_address;
+    // register_index C13 74LS377
     reg [7:0] register_index;
+    // result_register C9 74LS377
     reg [7:0] result_register;
+    // swap_register C12/C11 74LS173
     reg [7:0] swap_register;
+    // 
     reg [7:0] flags_register;
-    reg [3:0] condition_codes; // M12
-    reg [7:0] bus_read; // A11/A12
+    // condition_codes M12 74LS378
+    reg [3:0] condition_codes;
+    // bus_read A11/A12 Am2907
+    reg [7:0] bus_read;
+    reg [7:0] interrupt_level;
 
     // 6309 ROM
     wire [7:0] map_rom_address = DPBus;
@@ -61,8 +69,9 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     // Synchronous Register RAM
     wire bit53 = pipeline[53];
     wire reg_low_select = bit53;
-    // High/low register select, D10 74LS02 NOR gate
-    wire [7:0] reg_ram_addr = { register_index[7:1], ~(reg_low_select | register_index[0]) };
+    // High/low register select, C14 74LS157 mux, D10 74LS02 NOR gate
+    wire [3:0] reg_addr_hi = pipeline[55] ? interrupt_level[7:4] : register_index[7:4];
+    wire [7:0] reg_ram_addr = { reg_addr_hi, register_index[3:1], ~(reg_low_select | register_index[0]) };
     wire rr_write_en = k11 == 4;
     wire [7:0] reg_ram_data_in = result_register;
     wire [7:0] reg_ram_data_out;
@@ -278,6 +287,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             writeEnBus <= 0;
             pipeline <= 56'h42abc618b781c0; // First microcode word. Synth prefers it this way.
             uc_rom_address_pipe <= 0;
+            interrupt_level <= 0;
         end else begin
             pipeline <= uc_rom_data;
             uc_rom_address_pipe <= uc_rom_address;
@@ -290,7 +300,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             `ifdef TRACE
                 if (uc_rom_address_pipe == 11'h103) begin
                     $display("%x %x F:%x A:%x%x B:%x%x X:%x%x Y:%x%x Z:%x%x S:%x%x C:%x%x %s",
-                        memory_address-1, DPBus, condition_codes,
+                        memory_address-1, DPBus, flags_register,
                         reg_ram.memory[1], reg_ram.memory[0],
                         reg_ram.memory[3], reg_ram.memory[2],
                         reg_ram.memory[5], reg_ram.memory[4],
@@ -307,7 +317,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 0: ;
                 1: result_register <= FBus;
                 2: register_index <= FBus; // uC bit 53 might simplify 16 bit register write
-                3: ; // load D9
+                3: interrupt_level <= FBus; // load D9
                 4: ; // load page table base register
                 5: memory_address <= work_address;
                 6: ; // load AR on 2909s, see above

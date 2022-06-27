@@ -236,6 +236,7 @@ class Disassembler(object):
         reg_ram_addr = self.getSignal(sig, 'cpu.reg_ram_addr').value
         flags_register = self.getSignal(sig, 'cpu.flags_register').value
         swap_register = self.getSignal(sig, 'cpu.swap_register').value
+        seq0_orin = self.getSignal(sig, 'cpu.seq0_orin').value
 
         if k11 == 6:
             k11Map[6] = f'WR.LO<-RR({result_register:02x})'
@@ -288,8 +289,8 @@ class Disassembler(object):
         time = int(clock.time/100)
 
         comb = f'{time} {addr:03x}: {d2d3Map[d2d3]:12s} {aluCode:24s} {fbr:9s}'
-        seq = f'{e6Map[e6]} {h11Map[h11]} {k11Map[k11]} {e7Map[e7]}  {inst}'
-        return f'{comb} | {seq}'
+        seq = f'{e6Map[e6]} {h11Map[h11]} {k11Map[k11]} {e7Map[e7]}  {inst} Flags:{flags_register:02x}'
+        return f'{comb} | {seq} seq0_orin:{seq0_orin}'
 
 if __name__ == '__main__':
     vcd = VCDFile('vcd/CPUTestBench.vcd')
