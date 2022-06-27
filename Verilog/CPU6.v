@@ -6,10 +6,13 @@
 `include "MapROM.v"
 `include "RegisterRAM.v"
 
+`ifdef TRACE
+    `include "Instructions.v"
+`endif
+
 module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     output reg writeEnBus, output wire [15:0] addressBus, output wire [7:0] dataOutBus);
 
-    integer i;
     initial begin
         cycle_counter = 0;
     end
@@ -25,6 +28,10 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     reg [31:0] cycle_counter;
     assign pc_increment = h11 == 5 ? 1 : 0;
     reg [10:0] uc_rom_address_pipe;
+
+    `ifdef TRACE
+        Instructions inst_map();
+    `endif
 
     /*
      * Rising edge triggered registers
@@ -279,6 +286,21 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             end else begin
                 cycle_counter <= cycle_counter + 1;
             end
+
+            `ifdef TRACE
+                if (uc_rom_address_pipe == 11'h103) begin
+                    $display("%x %x F:%x A:%x%x B:%x%x X:%x%x Y:%x%x Z:%x%x S:%x%x C:%x%x %s",
+                        memory_address-1, DPBus, condition_codes,
+                        reg_ram.memory[1], reg_ram.memory[0],
+                        reg_ram.memory[3], reg_ram.memory[2],
+                        reg_ram.memory[5], reg_ram.memory[4],
+                        reg_ram.memory[7], reg_ram.memory[6],
+                        reg_ram.memory[9], reg_ram.memory[8],
+                        reg_ram.memory[11], reg_ram.memory[10],
+                        reg_ram.memory[13], reg_ram.memory[12],
+                        inst_map.instruction_map[DPBus]);
+                end
+            `endif
 
             // 74LS138
             case (e6)
