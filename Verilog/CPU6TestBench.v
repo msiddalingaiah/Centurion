@@ -1,6 +1,10 @@
 
 `define TRACE
 
+`define TRACE_UC
+//`define TRACE_RD
+`define TRACE_WR
+
 `timescale 1 ns/10 ps  // time-unit = 1 ns, precision = 10 ps
 `include "CPU6.v"
 `include "Clock.v"
@@ -59,7 +63,11 @@ module CPU6TestBench;
 
         $readmemh("programs/diag_f1.txt", ram.ram_cells);
         sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
-        #100000 $finish;
+
+        // $readmemh("programs/sjs_f60800.txt", ram.ram_cells);
+        // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
+
+        #200000 $finish;
 
         $display("All done!");
         $finish;
@@ -127,5 +135,26 @@ Opcode: 0x3e, cycles:    10
 Opcode: 0x3f, cycles:    10
 Opcode: 0x81, cycles:     8
 Opcode: 0x83, cycles:    18
+
+01 NOP 4
+05 DI 8
+3A CLAW 6
+22 CLR 11
+a1 STAL 18
+b1 STAW 22
+90 LDAW 12
+5f XASW 8
+81 LDAL 18
+c1 LDBL 18
+c0 LDBL 8
+99 LAWB 19
+42 AND 11
+40 ADD 11
+58 AABW 9
+49 SABL 8
+3d SLAW 8
+71 JMP 14
+14 BZ 9 (branch not taken)
+15 BNZ 18 (branch taken)
 
  */

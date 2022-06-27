@@ -48,7 +48,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     reg [7:0] result_register;
     // swap_register C12/C11 74LS173
     reg [7:0] swap_register;
-    // 
+    // flags_register J9 74LS378
     reg [7:0] flags_register;
     // condition_codes M12 74LS378
     reg [3:0] condition_codes;
@@ -310,6 +310,21 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                         reg_ram.memory[13], reg_ram.memory[12],
                         inst_map.instruction_map[DPBus]);
                 end
+                `ifdef TRACE_UC
+                    if (jsr_ == 0) begin
+                        $display("    uC JSR %x", uc_rom_address_pipe);
+                    end
+                `endif
+                `ifdef TRACE_WR
+                    if (writeEnBus == 1) begin
+                        $display("    WR BUS %x %x", memory_address, result_register);
+                    end
+                `endif
+                `ifdef TRACE_RD
+                    if (d2d3 == 10) begin
+                        $display("    RD BUS %x %x", memory_address, bus_read);
+                    end
+                `endif
             `endif
 
             // 74LS138
