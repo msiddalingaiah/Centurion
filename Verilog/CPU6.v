@@ -313,7 +313,10 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             `endif
             `ifdef TRACE_UC
                 if (jsr_ == 0) begin
-                    $display("    uC JSR %x", uc_rom_address_pipe);
+                    $display("        uC %x JSR %x%x%x", uc_rom_address_pipe, seq2_din, seq1_din, seq0_din);
+                end
+                if (seq0_orin != 0) begin
+                    $display("        uC %x OR %x -> %x", uc_rom_address_pipe, seq0_orin, uc_rom_address | seq0_orin);
                 end
             `endif
             `ifdef TRACE_WR
