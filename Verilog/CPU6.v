@@ -318,15 +318,18 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 if (seq0_orin != 0) begin
                     $display("        uC %x OR %x -> %x", uc_rom_address_pipe, seq0_orin, uc_rom_address | seq0_orin);
                 end
+                if (k11 == 3) begin
+                    $display("        uC F11.%d <= %d", alu_b[3:1], alu_b[0]);
+                end
             `endif
             `ifdef TRACE_WR
                 if (writeEnBus == 1) begin
-                    $display("    WR BUS %x %x", memory_address, result_register);
+                    $display("    WR %x %x", memory_address, result_register);
                 end
             `endif
             `ifdef TRACE_RD
                 if (e7 == 3) begin
-                    $display("    RD BUS %x %x", memory_address, dataInBus);
+                    $display("    RD %x %x", memory_address, dataInBus);
                 end
             `endif
 
