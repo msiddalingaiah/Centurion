@@ -6,7 +6,7 @@
 `include "MapROM.v"
 `include "RegisterRAM.v"
 
-`ifdef TRACE
+`ifdef TRACE_I
     `include "Instructions.v"
 `endif
 
@@ -29,7 +29,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     assign pc_increment = h11 == 5 ? 1 : 0;
     reg [10:0] uc_rom_address_pipe;
 
-    `ifdef TRACE
+    `ifdef TRACE_I
         Instructions inst_map();
     `endif
 
@@ -297,10 +297,10 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 cycle_counter <= cycle_counter + 1;
             end
 
-            `ifdef TRACE
+            `ifdef TRACE_I
                 if (uc_rom_address_pipe == 11'h103) begin
-                    $display("%x %x F:%x A:%x%x B:%x%x X:%x%x Y:%x%x Z:%x%x S:%x%x C:%x%x %s",
-                        memory_address-1, DPBus, flags_register,
+                    $display("%x F:%x A:%x%x B:%x%x X:%x%x Y:%x%x Z:%x%x S:%x%x C:%x%x | %x%s",
+                        memory_address-1, flags_register,
                         reg_ram.memory[1], reg_ram.memory[0],
                         reg_ram.memory[3], reg_ram.memory[2],
                         reg_ram.memory[5], reg_ram.memory[4],
@@ -308,23 +308,23 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                         reg_ram.memory[9], reg_ram.memory[8],
                         reg_ram.memory[11], reg_ram.memory[10],
                         reg_ram.memory[13], reg_ram.memory[12],
-                        inst_map.instruction_map[DPBus]);
+                        DPBus, inst_map.instruction_map[DPBus]);
                 end
-                `ifdef TRACE_UC
-                    if (jsr_ == 0) begin
-                        $display("    uC JSR %x", uc_rom_address_pipe);
-                    end
-                `endif
-                `ifdef TRACE_WR
-                    if (writeEnBus == 1) begin
-                        $display("    WR BUS %x %x", memory_address, result_register);
-                    end
-                `endif
-                `ifdef TRACE_RD
-                    if (d2d3 == 10) begin
-                        $display("    RD BUS %x %x", memory_address, bus_read);
-                    end
-                `endif
+            `endif
+            `ifdef TRACE_UC
+                if (jsr_ == 0) begin
+                    $display("    uC JSR %x", uc_rom_address_pipe);
+                end
+            `endif
+            `ifdef TRACE_WR
+                if (writeEnBus == 1) begin
+                    $display("    WR BUS %x %x", memory_address, result_register);
+                end
+            `endif
+            `ifdef TRACE_RD
+                if (d2d3 == 10) begin
+                    $display("    RD BUS %x %x", memory_address, bus_read);
+                end
             `endif
 
             // 74LS138

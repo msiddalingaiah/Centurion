@@ -1,9 +1,8 @@
 
-`define TRACE
-
-`define TRACE_UC
-//`define TRACE_RD
-`define TRACE_WR
+`define TRACE_I // trace instruction
+//`define TRACE_WR // trace bus writes
+//`define TRACE_RD // trace bus reads
+//`define TRACE_UC // trace microcode
 
 `timescale 1 ns/10 ps  // time-unit = 1 ns, precision = 10 ps
 `include "CPU6.v"
@@ -21,12 +20,12 @@ module Memory(input wire clock, input wire [15:0] address, input wire write_en, 
             16'hfd00: data_out = 8'h71; // Reset vector, JMP 8001
             16'hfd01: data_out = 8'h80;
             16'hfd02: data_out = 8'h01;
-            default: data_out = ram_cells[mapped_address];
+            default: data_out = address[15:8] == 8'h80 || address[15:8] == 8'h88 ? ram_cells[mapped_address] : 0;
         endcase
     end
 
     always @(posedge clock) begin
-        if (write_en == 1 && address[15:8] == 8'h01) begin
+        if (write_en == 1 && address[15:8] == 8'h80) begin
             ram_cells[mapped_address] <= data_in;
         end
     end
@@ -47,9 +46,9 @@ module CPU6TestBench;
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
         // wait(sim_end == 1);
 
-        // $write("alu_test: ");
-        // $readmemh("programs/alu_test.txt", ram.ram_cells);
-        // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
+        $write("alu_test: ");
+        $readmemh("programs/alu_test.txt", ram.ram_cells);
+        sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
         // wait(sim_end == 1);
 
         // $readmemh("programs/cylon.txt", ram.ram_cells);
@@ -61,8 +60,8 @@ module CPU6TestBench;
         // $readmemh("programs/blink.txt", ram.ram_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
 
-        $readmemh("programs/diag_f1.txt", ram.ram_cells);
-        sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
+        // $readmemh("programs/diag_f1.txt", ram.ram_cells);
+        // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
 
         // $readmemh("programs/sjs_f60800.txt", ram.ram_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
