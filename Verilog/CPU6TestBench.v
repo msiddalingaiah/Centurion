@@ -1,5 +1,5 @@
 
-`define TRACE_I // trace instruction
+//`define TRACE_I // trace instruction
 //`define TRACE_WR // trace bus writes
 //`define TRACE_RD // trace bus reads
 //`define TRACE_UC // trace microcode
@@ -17,6 +17,9 @@ module Memory(input wire clock, input wire [15:0] address, input wire write_en, 
 
     always @(*) begin
         case (address)
+            16'hf800: data_out = 8'h71; // Reset vector, JMP 8001
+            16'hf801: data_out = 8'h80;
+            16'hf802: data_out = 8'h01;
             16'hfd00: data_out = 8'h71; // Reset vector, JMP 8001
             16'hfd01: data_out = 8'h80;
             16'hfd02: data_out = 8'h01;
@@ -36,20 +39,20 @@ module CPU6TestBench;
         $dumpfile("vcd/CPUTestBench.vcd");
         $dumpvars(0, CPU6TestBench);
 
-        // $write("hellorld: ");
-        // $readmemh("programs/hellorld.txt", ram.ram_cells);
-        // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
-        // wait(sim_end == 1);
+        $write("hellorld: ");
+        $readmemh("programs/hellorld.txt", ram.ram_cells);
+        sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
+        wait(sim_end == 1);
 
-        // $write("bnz_test: ");
-        // $readmemh("programs/bnz_test.txt", ram.ram_cells);
-        // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
-        // wait(sim_end == 1);
+        $write("bnz_test: ");
+        $readmemh("programs/bnz_test.txt", ram.ram_cells);
+        sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
+        wait(sim_end == 1);
 
         $write("alu_test: ");
         $readmemh("programs/alu_test.txt", ram.ram_cells);
         sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
-        // wait(sim_end == 1);
+        wait(sim_end == 1);
 
         // $readmemh("programs/cylon.txt", ram.ram_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
@@ -66,7 +69,7 @@ module CPU6TestBench;
         // $readmemh("programs/sjs_f60800.txt", ram.ram_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
 
-        #200000 $finish;
+        // #300000 $finish;
 
         $display("All done!");
         $finish;

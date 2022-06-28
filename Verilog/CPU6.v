@@ -198,7 +198,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     wire [2:0] h11 = pipeline[12:10];
     wire [2:0] k11 = pipeline[9:7];
     wire [2:0] e6 = pipeline[6:4];
-    wire [1:0] j13 = pipeline[5:4];
+    wire [1:0] j13 = pipeline[21:20];
     wire [2:0] k9 = pipeline[18:16];
     wire [1:0] j12 = pipeline[17:16];
 
@@ -322,8 +322,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 end
             `endif
             `ifdef TRACE_RD
-                if (d2d3 == 10) begin
-                    $display("    RD BUS %x %x", memory_address, bus_read);
+                if (e7 == 3) begin
+                    $display("    RD BUS %x %x", memory_address, dataInBus);
                 end
             `endif
 
