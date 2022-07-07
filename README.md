@@ -1,4 +1,4 @@
-# Centurion
+# Centurion Hardware Ressurection
 
 This directory contains an [FPGA](https://en.wikipedia.org/wiki/Field-programmable_gate_array) implementation of the [Centurion Minicomputer](https://github.com/Nakazoto/CenturionComputer/wiki).
 
@@ -19,6 +19,15 @@ The build process is straightforward:
 ```
 
 The simulation output is saved in the ```Verilog/vcd``` directory. It can be viewed using [GTK Wave](http://gtkwave.sourceforge.net/).
+
+Simulation supports several trace levels for debugging purposes. Uncomment any of the following macros in CPU6TestBench.v:
+
+```
+// `define TRACE_I // trace instructions
+// `define TRACE_WR // trace bus writes
+// `define TRACE_RD // trace bus reads
+// `define TRACE_UC // trace microcode
+```
 
 ## Synthesis
 

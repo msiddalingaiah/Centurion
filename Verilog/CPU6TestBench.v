@@ -1,8 +1,8 @@
 
-//`define TRACE_I // trace instruction
-//`define TRACE_WR // trace bus writes
-//`define TRACE_RD // trace bus reads
-//`define TRACE_UC // trace microcode
+// `define TRACE_I // trace instructions
+// `define TRACE_WR // trace bus writes
+// `define TRACE_RD // trace bus reads
+// `define TRACE_UC // trace microcode
 
 `timescale 1 ns/10 ps  // time-unit = 1 ns, precision = 10 ps
 `include "CPU6.v"
@@ -23,7 +23,9 @@ module Memory(input wire clock, input wire [15:0] address, input wire write_en, 
             16'hfd00: data_out = 8'h71; // Reset vector, JMP 8001
             16'hfd01: data_out = 8'h80;
             16'hfd02: data_out = 8'h01;
-            default: data_out = address[15:8] == 8'h80 || address[15:8] == 8'h88 ? ram_cells[mapped_address] : 0;
+            16'hf200: data_out = 8'h02; // Diag MUX 0 status
+            16'hf110: data_out = 8'h0d; // Diag DIP switches
+            default: data_out = address[15:12] == 4'h8 ? ram_cells[mapped_address] : 0;
         endcase
     end
 
@@ -69,7 +71,7 @@ module CPU6TestBench;
         // $readmemh("programs/sjs_f60800.txt", ram.ram_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
 
-        // #300000 $finish;
+        // #200000 $finish;
 
         $display("All done!");
         $finish;
@@ -89,7 +91,7 @@ module CPU6TestBench;
     always @(posedge clock) begin
         if (writeEnBus == 1) begin
             // Pretend there's a UART here :-)
-            if (addressBus == 16'hf200) $write("%s", data_c2r);
+            if (addressBus == 16'hf201) $write("%s", data_c2r & 8'h7f);
             // A hack to stop simulation
             if (addressBus == 16'hf900 && data_c2r == 8'h01) begin
                 sim_end <= 1;

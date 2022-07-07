@@ -9,9 +9,9 @@ fc
 08
 C0 // LDBL 'A'
 41
-e1 // STBL #f200
+e1 // STBL #f201
 f2
-00
+01
 71 // JMP #8005
 80
 05
@@ -27,9 +27,9 @@ fc
 08
 c0 // LDBL 'B'
 42
-e1 // STBL #f200
+e1 // STBL #f201
 f2
-00
+01
 71 // JMP #8017
 80
 17
@@ -41,9 +41,9 @@ f2
 08
 c0 // LDBL 'C'
 43
-e1 // STBL #f200
+e1 // STBL #f201
 f2
-00
+01
 71 // JMP #8025
 80
 25
@@ -51,18 +51,18 @@ f2
 03
 c0 // LDBL 'D'
 44
-e1 // STBL #f200
+e1 // STBL #f201
 f2
-00
+01
 21 // DCR AL, 1
 10
 15 // BNZ f7
 f7
 80 // LDAL '\n'
 0a
-a1 // STAL #f200
+a1 // STAL #f201
 f2
-00
+01
 80 // LDAL #01
 01
 a1 // STAL #f900 (sim_end <= 1)

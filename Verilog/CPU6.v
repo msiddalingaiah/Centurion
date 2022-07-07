@@ -54,6 +54,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     reg [3:0] condition_codes;
     // bus_read A11/A12 Am2907
     reg [7:0] bus_read;
+    // interrupt_level D9 74LS378
     reg [7:0] interrupt_level;
 
     // 6309 ROM
@@ -260,7 +261,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             8: ; // DPBus = translated address hi, 17:11 (17 down), and top 3 bits together
             9: DPBus = { ~condition_codes[3:0], 4'b0000 }; // low nibble is sense switches
             10: DPBus = bus_read; // DPBus = (e7 == 3) ? dataInBus : bus_read;
-            11: ; // read ILR (interrupt level register?) H14 4 bits, A8 4 bits current level
+            11: DPBus = 8'h0f; // read ILR (interrupt level register?) { A8 4 bits, H14 4 bits }
             12: ; // read switch 2 other half of dip switches and condition codes?
             13: DPBus = constant;
             14: ;
