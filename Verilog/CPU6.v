@@ -148,7 +148,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     wire [2:0] alu_op = pipeline[39:37];
     wire [2:0] alu_dest = pipeline[42:40];
 
-    // ALU 0 (bits 3:0)
+    // F9 Am2901 ALU 0 (bits 3:0)
     wire [3:0] alu0_din = DPBus[3:0];
     reg alu0_cin;
     wire [3:0] alu0_yout;
@@ -156,17 +156,15 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     wire alu0_f0;
     wire alu0_f3;
     wire alu0_ovr;
-    wire alu0_q0_in, alu0_ram0_in, alu0_q3_in, alu0_ram3_in;
+    reg alu0_q0_in;
+    wire alu0_ram0_in, alu0_q3_in, alu0_ram3_in;
     wire alu0_q0_out, alu0_ram0_out, alu0_q3_out, alu0_ram3_out;
     Am2901 alu0(clock, alu0_din, alu_a, alu_b, alu_src, alu_op, alu_dest, alu0_cin,
         alu0_yout, alu0_cout, alu0_f0, alu0_f3, alu0_ovr,
         alu0_q0_in, alu0_ram0_in, alu0_q3_in, alu0_ram3_in,
         alu0_q0_out, alu0_ram0_out, alu0_q3_out, alu0_ram3_out);
 
-    // Shift/carry select
-    wire [1:0] shift_carry = pipeline[52:51];
-
-    // ALU 1 (bits 7:4)
+    // F7 Am2901 ALU 1 (bits 7:4)
     wire [3:0] alu1_din = DPBus[7:4];
     wire alu1_cin = alu0_cout;
     wire [3:0] alu1_yout;
@@ -174,23 +172,23 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     wire alu1_f0;
     wire alu1_f3;
     wire alu1_ovr;
-    wire alu1_q0_in, alu1_ram0_in, alu1_q3_in, alu1_ram3_in;
+    wire alu1_q0_in, alu1_ram0_in, alu1_q3_in;
     wire alu1_q0_out, alu1_ram0_out, alu1_q3_out, alu1_ram3_out;
+    reg alu1_ram3_in;
     Am2901 alu1(clock, alu1_din, alu_a, alu_b, alu_src, alu_op, alu_dest, alu1_cin,
         alu1_yout, alu1_cout, alu1_f0, alu1_f3, alu1_ovr,
         alu1_q0_in, alu1_ram0_in, alu1_q3_in, alu1_ram3_in,
         alu1_q0_out, alu1_ram0_out, alu1_q3_out, alu1_ram3_out);
+
+    wire alu_i7 = alu_dest[1];
 
     assign alu1_q0_in = alu0_q3_out;
     assign alu1_ram0_in = alu0_ram3_out;
     assign alu0_q3_in = alu1_q0_out;
     assign alu0_ram3_in = alu1_ram0_out;
 
-    // TBD H6 mux rotate left, rotate right
-    assign alu1_q3_in = 0;
-    assign alu1_ram3_in = 0;
-    assign alu0_q0_in = 0;
-    assign alu0_ram0_in = 0;
+    assign alu1_q3_in = alu0_ram0_out;
+    assign alu0_ram0_in = alu1_q3_out;
 
     // Decoders
     // d2d3 is decoded before pipeline, but outputs are registered.
@@ -201,7 +199,26 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     wire [2:0] e6 = pipeline[6:4];
     wire [1:0] j13 = pipeline[21:20];
     wire [2:0] k9 = pipeline[18:16];
+
+    // Muxes
+
+    // J10 Link/carry mux 74LS151
+    wire j10_enable = pipeline[21];
+    wire [2:0] j10 = pipeline[24:22];
+    reg cc_l;
+
+    // J11 Fault/overflow mux 74LS151
+    wire j11_enable = pipeline[18];
+    wire [2:0] j11 = { flags_register[2], pipeline[20:19] };
+    reg cc_f;
+
+    // J12 Minus/sign mux 74LS153
     wire [1:0] j12 = pipeline[17:16];
+    reg cc_m, cc_v;
+
+    // F6 ALU carry in mus 74LS153 (half used)
+    // H6 ALU shift mux
+    wire [1:0] f6h6 = pipeline[52:51];
 
     // Constant (immediate data)
     wire [7:0] constant = ~pipeline[16+7:16];
@@ -209,6 +226,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     // Internal Busses
     reg [7:0] DPBus;
     reg [7:0] FBus;
+
 
     // Guideline #3: When modeling combinational logic with an "always" 
     //              block, use blocking assignments.
@@ -220,12 +238,69 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             endcase
         end
 
+        // Carry in
         alu0_cin = 0;
-        case (shift_carry)
+        case (f6h6)
             0: alu0_cin = 0;
             1: alu0_cin = 1;
             2: alu0_cin = flags_register[3];
             3: alu0_cin = 0;
+        endcase
+
+        // Rotate
+        alu1_ram3_in = 0;
+        alu0_q0_in = 0;
+        if (alu_i7 == 0) begin
+            case (f6h6)
+                0: alu1_ram3_in = alu1_f3;
+                1: alu1_ram3_in = flags_register[3];
+                2: alu1_ram3_in = alu0_q0_out;
+                3: alu1_ram3_in = alu1_cout;
+            endcase
+        end else begin
+            case (f6h6)
+                0: alu0_q0_in = 0;
+                1: alu0_q0_in = flags_register[3];
+                2: alu0_q0_in = alu1_f3;
+                3: alu0_q0_in = 1;
+            endcase
+        end
+
+        cc_l = 0;
+        if (j10_enable == 0) begin
+            case (j10)
+                0: cc_l = condition_codes[3];
+                1: cc_l = ~condition_codes[3];
+                2: cc_l = flags_register[3];
+                3: cc_l = 0;
+                4: cc_l = result_register[4];
+                5: cc_l = alu1_ram3_in;
+                6: cc_l = alu_i7 ? alu1_q3_out : alu0_ram0_out;
+                7: cc_l = alu0_q0_in;
+            endcase
+        end
+
+        cc_f = 0;
+        if (j11_enable == 0) begin
+            case (j11)
+                0: cc_f = result_register[5];
+                1: cc_f = 1;
+                2: cc_f = condition_codes[2];
+                3: cc_f = 0;
+                4: cc_f = result_register[5];
+                5: cc_f = 1;
+                6: cc_f = condition_codes[2];
+                7: cc_f = 1;
+            endcase
+        end
+
+        cc_m = 0;
+        cc_v = 0;
+        case (j12)
+            0: begin cc_m = condition_codes[1]; cc_v = 0; end
+            1: begin cc_m = flags_register[1]; cc_v = flags_register[0]; end
+            2: begin cc_m = result_register[6]; cc_v = result_register[7]; end
+            3: begin cc_m = flags_register[1]; cc_v = flags_register[0] & flags_register[5]; end
         endcase
 
         seq0_orin = 0;
@@ -259,7 +334,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             6: ;
             7: ;
             8: ; // DPBus = translated address hi, 17:11 (17 down), and top 3 bits together
-            9: DPBus = { ~condition_codes[3:0], 4'b0000 }; // low nibble is sense switches
+            9: DPBus = { ~condition_codes[0], ~condition_codes[1], ~condition_codes[2], ~condition_codes[3], 4'b0000 }; // low nibble is sense switches
             10: DPBus = bus_read; // DPBus = (e7 == 3) ? dataInBus : bus_read;
             11: DPBus = 8'h0f; // read ILR (interrupt level register?) { A8 4 bits, H14 4 bits }
             12: ; // read switch 2 other half of dip switches and condition codes?
@@ -300,8 +375,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
 
             `ifdef TRACE_I
                 if (uc_rom_address_pipe == 11'h103) begin
-                    $display("%x F:%x A:%x%x B:%x%x X:%x%x Y:%x%x Z:%x%x S:%x%x C:%x%x | %x%s",
-                        memory_address-1, flags_register,
+                    $display("%x F:%x C:%x A:%x%x B:%x%x X:%x%x Y:%x%x Z:%x%x S:%x%x C:%x%x | %x%s",
+                        memory_address-1, flags_register, condition_codes,
                         reg_ram.memory[1], reg_ram.memory[0],
                         reg_ram.memory[3], reg_ram.memory[2],
                         reg_ram.memory[5], reg_ram.memory[4],
@@ -343,17 +418,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 4: ; // load page table base register
                 5: memory_address <= work_address;
                 6: ; // load AR on 2909s, see above
-                7: // load condition code register M12
-                    begin
-                        // based on table in wiki (j12), condition codes in instructions wiki
-                        case (j12)
-                            0: begin condition_codes[3] <= condition_codes[0]; condition_codes[2] <= condition_codes[1]; end
-                            1: begin condition_codes[3] <= flags_register[0]; condition_codes[2] <= flags_register[1]; end
-                            2: condition_codes <= result_register[3:0]; // Not sure
-                            3: begin condition_codes[3] <= flags_register[5] & flags_register[0]; condition_codes[2] <= flags_register[1]; end
-                            default: ;
-                        endcase
-                    end
+                7: condition_codes <= { cc_l, cc_f, cc_m, cc_v } ; // load condition code register M12
             endcase
 
             // 74LS138 (only half used)            

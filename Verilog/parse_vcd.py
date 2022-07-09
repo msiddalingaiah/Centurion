@@ -239,6 +239,7 @@ class Disassembler(object):
         seq0_orin = self.getSignal(sig, 'cpu.seq0_orin').value
         case_ = self.getSignal(sig, 'cpu.case_').value
         j13 = self.getSignal(sig, 'cpu.j13').value
+        condition_codes = self.getSignal(sig, 'cpu.condition_codes').value
 
         if k11 == 6:
             k11Map[6] = f'WR.LO<-RR({result_register:02x})'
@@ -259,6 +260,8 @@ class Disassembler(object):
             d2d3Map[0] = f'D=Swap({swap_register:02x})'
         if d2d3 == 1:
             d2d3Map[1] = f'D=R[{reg_ram_addr:02x}]({reg_ram_data_out:02x})'
+        if d2d3 == 9:
+            d2d3Map[9] = f'D=CC({((~condition_codes)<<4)&0xff:02x})'
         if d2d3 == 10:
             d2d3Map[10] = f'D=BusR({bus_read:02x})'
         if d2d3 == 13:

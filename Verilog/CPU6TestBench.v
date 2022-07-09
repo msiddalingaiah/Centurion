@@ -17,9 +17,6 @@ module Memory(input wire clock, input wire [15:0] address, input wire write_en, 
 
     always @(*) begin
         case (address)
-            16'hf800: data_out = 8'h71; // Reset vector, JMP 8001
-            16'hf801: data_out = 8'h80;
-            16'hf802: data_out = 8'h01;
             16'hfd00: data_out = 8'h71; // Reset vector, JMP 8001
             16'hfd01: data_out = 8'h80;
             16'hfd02: data_out = 8'h01;
@@ -71,7 +68,7 @@ module CPU6TestBench;
         // $readmemh("programs/sjs_f60800.txt", ram.ram_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
 
-        // #200000 $finish;
+        // #400000 $finish;
 
         $display("All done!");
         $finish;
