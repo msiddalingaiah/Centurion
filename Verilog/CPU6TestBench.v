@@ -11,23 +11,29 @@
 module Memory(input wire clock, input wire [15:0] address, input wire write_en, input wire [7:0] data_in,
     output reg [7:0] data_out);
 
+    reg [7:0] rom_cells[0:2047];
     reg [7:0] ram_cells[0:2047];
 
     wire [10:0] mapped_address = address[10:0];
 
     always @(*) begin
+        data_out = 0;
         case (address)
             16'hfd00: data_out = 8'h71; // Reset vector, JMP 8001
             16'hfd01: data_out = 8'h80;
             16'hfd02: data_out = 8'h01;
             16'hf200: data_out = 8'h02; // Diag MUX 0 status
             16'hf110: data_out = 8'h0d; // Diag DIP switches
-            default: data_out = address[15:12] == 4'h8 ? ram_cells[mapped_address] : 0;
+            default:
+                begin
+                    if (address[15:12] == 4'h8) data_out = rom_cells[mapped_address];
+                    if (address[15:8] == 8'hb8) data_out = ram_cells[mapped_address];
+                end
         endcase
     end
 
     always @(posedge clock) begin
-        if (write_en == 1 && address[15:8] == 8'h80) begin
+        if (write_en == 1 && address[15:8] == 8'hb8) begin
             ram_cells[mapped_address] <= data_in;
         end
     end
@@ -39,36 +45,36 @@ module CPU6TestBench;
         $dumpvars(0, CPU6TestBench);
 
         $write("hellorld: ");
-        $readmemh("programs/hellorld.txt", ram.ram_cells);
+        $readmemh("programs/hellorld.txt", ram.rom_cells);
         sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
         wait(sim_end == 1);
 
         $write("bnz_test: ");
-        $readmemh("programs/bnz_test.txt", ram.ram_cells);
+        $readmemh("programs/bnz_test.txt", ram.rom_cells);
         sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
         wait(sim_end == 1);
 
         $write("alu_test: ");
-        $readmemh("programs/alu_test.txt", ram.ram_cells);
+        $readmemh("programs/alu_test.txt", ram.rom_cells);
         sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
         wait(sim_end == 1);
 
-        // $readmemh("programs/cylon.txt", ram.ram_cells);
+        // $readmemh("programs/cylon.txt", ram.rom_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
 
-        // $readmemh("programs/sjs_4700.txt", ram.ram_cells);
+        // $readmemh("programs/sjs_4700.txt", ram.rom_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
 
-        // $readmemh("programs/blink.txt", ram.ram_cells);
+        // $readmemh("programs/blink.txt", ram.rom_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
 
-        // $readmemh("programs/diag_f1.txt", ram.ram_cells);
+        // $readmemh("programs/diag_f1.txt", ram.rom_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
 
-        // $readmemh("programs/sjs_f60800.txt", ram.ram_cells);
+        // $readmemh("programs/sjs_f60800.txt", ram.rom_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
 
-        // #400000 $finish;
+        // #1000000 $finish;
 
         $display("All done!");
         $finish;
@@ -84,11 +90,16 @@ module CPU6TestBench;
     reg reset;
     CPU6 cpu(reset, clock, data_r2c, writeEnBus, addressBus, data_c2r);
     reg sim_end;
+    wire [7:0] cc = data_c2r & 8'h7f;
 
     always @(posedge clock) begin
         if (writeEnBus == 1) begin
             // Pretend there's a UART here :-)
-            if (addressBus == 16'hf201) $write("%s", data_c2r & 8'h7f);
+            if (addressBus == 16'hf201) begin
+                if ((cc >= 32) || (cc == 9) || (cc == 10) || (cc == 13)) begin
+                    $write("%s", cc);
+                end
+            end
             // A hack to stop simulation
             if (addressBus == 16'hf900 && data_c2r == 8'h01) begin
                 sim_end <= 1;

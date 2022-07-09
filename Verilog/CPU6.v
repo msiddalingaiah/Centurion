@@ -198,7 +198,6 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     wire [2:0] k11 = pipeline[9:7];
     wire [2:0] e6 = pipeline[6:4];
     wire [1:0] j13 = pipeline[21:20];
-    wire [2:0] k9 = pipeline[18:16];
 
     // Muxes
 
@@ -220,6 +219,10 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     // H6 ALU shift mux
     wire [1:0] f6h6 = pipeline[52:51];
 
+    // K9 JSR mux 74151
+    wire k9_enable = pipeline[15];
+    wire [2:0] k9 = pipeline[18:16];
+
     // Constant (immediate data)
     wire [7:0] constant = ~pipeline[16+7:16];
 
@@ -231,10 +234,17 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     // Guideline #3: When modeling combinational logic with an "always" 
     //              block, use blocking assignments.
     always @(*) begin
-        jsr_ = 1;
-        if (pipeline[15] == 0) begin
+        jsr_ = 1; // Inverted output
+        if (k9_enable == 0) begin
             case (k9)
+                0: ; // Bus busy
+                1: jsr_ = register_index[0] | register_index[4];
                 2: jsr_ = ~register_index[0];
+                3: ; // NOT.MEM
+                4: ; // DMA?
+                5: ; // DMA interrupt active
+                6: ; // Parity error
+                7: ; // Interrupt
             endcase
         end
 
