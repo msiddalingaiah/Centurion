@@ -1,10 +1,14 @@
-# Centurion Hardware Ressurection
+# Centurion Hardware Resurection
 
 This directory contains an [FPGA](https://en.wikipedia.org/wiki/Field-programmable_gate_array) implementation of the [Centurion Minicomputer](https://github.com/Nakazoto/CenturionComputer/wiki).
 
-The Centurion was an 8-bit minicomputer designed and built by Warrex Computer Corporation, headquartered in Richardson, Texas. The company operated from the mid 1970's into the mid 1980's, delivering approximately 1000 computers to customers in Texas, Oklahoma, and others. The computers were used for accounting and other business functions in medium sized companies.
+The Centurion was an 8-bit minicomputer designed and built by Warrex Computer Corporation, headquartered in Richardson, Texas. The company operated from the mid 1970's into the mid 1980's, delivering approximately 1000 computers to customers in Texas, Oklahoma, and others. The computers were used for accounting and business functions in medium sized companies.
 
 The Centurion was made of almost entirely TTL MSI logic on a handful of PC boards in a single rack. Earlier models relied on magnetic core memory, later models used MOS memory up to 256 kB. It was technologically similar to the DEC VAX 11/780 or Data General Nova, but smaller and lower priced. Competition from even lower cost microcomputers, particularly the IBM XT and AT in the 1980's, led to decreased sales and the end of the line.
+
+Below is a picure of CPU6 board. Notice the prominent [Am2900 series](https://en.wikipedia.org/wiki/AMD_Am2900) bit slice components. The HDL design described below implements the behavior of each of these components.
+
+![CPU6](https://github.com/Nakazoto/CenturionComputer/raw/main/Computer/CPU6%20Board/HiRes%20Photos/CPU6_HiRes_Scan_Front.jpg "CPU6")
 
 ## Simulation
 
@@ -20,7 +24,7 @@ The build process is straightforward:
 
 The simulation output is saved in the ```Verilog/vcd``` directory. It can be viewed using [GTK Wave](http://gtkwave.sourceforge.net/).
 
-Simulation supports several trace levels for debugging purposes. Uncomment any of the following macros in CPU6TestBench.v:
+Simulation supports several trace levels for debugging purposes. Uncomment any of the following macros in CPU6TestBench.v to enable tracing:
 
 ```
 // `define TRACE_I // trace instructions
@@ -79,7 +83,7 @@ Below is the CPU data path with enables for busses and registers. The enables ar
 
 ## Status
 
-Development is in progress. Many instructions have not been tested.
+Development is in progress. Most 8 and 16 bit instructions are known to work. A few instructions do not operate correctly.
 
 ### Links
 
