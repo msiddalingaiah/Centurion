@@ -33,27 +33,11 @@ Simulation supports several trace levels for debugging purposes. Uncomment any o
 
 [Project IceStorm](https://clifford.at/icestorm) open source tools were used for synthesis. Below is a demonstration program running on an [Alchitry Cu](https://alchitry.com/boards/cu) FPGA board containing a [Lattice iCE40 HX8K](https://www.latticesemi.com/iCE40):
 
-![Centurion1](images/Centurion3.gif "Running code")
+![Centurion1](images/cylon.gif "Running code")
 
-The iCE40 HX8K FPGA has 32 4kBit synchronous RAM blocks. Most of the block RAM is used for microcode (2k x 56-bit). Storing microcode in internal block RAM reduces the need for external storage, which is convenient. One RAM block is used for register RAM (256 bytes) and one more is used for a small amount of memory (instructions and data). External RAM will be connected in the future, limited internal block RAM is sufficient for testing.
+The iCE40 HX8K FPGA has 32 4kBit synchronous RAM blocks. Most of the block RAM is used for microcode (2k x 56-bit). Storing microcode in internal block RAM reduces the need for external storage, which is convenient. One RAM block is used for register RAM (256 bytes) and one more is used for a small amount of memory (instructions and data). External RAM will be connected in the future, limited internal block RAM is available for testing.
 
-This version is operating with a CPU clock of 5MHz, which is the estimated the clock rate of the original Centurion CPU6. This design can operate as high as 30MHz, many times faster the original. The assembly code used for the demonstration program is below:
-
-```
-ff02 80 00    // LDAL #00
-ff04 01       // NOP
-ff05 a1 5c 00 // STAL #5c00 (LEDPanel)
-ff08 20 00    // INR AL, 1
-ff0a 0e       // DLY 4.55 ms
-ff0b 0e       // DLY 4.55 ms
-ff0c 0e       // DLY 4.55 ms
-ff0d 0e       // DLY 4.55 ms
-ff0e 0e       // DLY 4.55 ms
-ff0f 0e       // DLY 4.55 ms
-ff10 0e       // DLY 4.55 ms
-ff11 0e       // DLY 4.55 ms
-ff12 71 ff 05 // JMP #ff05
-```
+This version is operating with a CPU clock of 5MHz, which is the estimated the clock rate of the original Centurion CPU6. This design can operate as high as 40MHz, many times faster the original.
 
 Synthesis is known to work on [WSL](https://docs.microsoft.com/en-us/windows/wsl/install) Ubuntu running on Windows 11. The following command will perform synthesis:
 
