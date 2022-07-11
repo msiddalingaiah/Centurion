@@ -18,7 +18,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     end
 
     assign addressBus = memory_address;
-    assign dataOutBus = result_register;
+    assign dataOutBus = bus_write;
 
     /*
      * Instrumentation
@@ -52,10 +52,12 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     reg [7:0] flags_register;
     // condition_codes M12 74LS378
     reg [3:0] condition_codes;
-    // bus_read A11/A12 Am2907
-    reg [7:0] bus_read;
+    // bus_read, bus_write A11/A12 Am2907
+    reg [7:0] bus_read, bus_write;
     // interrupt_level D9 74LS378
     reg [7:0] interrupt_level;
+    // write delay
+    reg writEnDelayed;
 
     // 6309 ROM
     wire [7:0] map_rom_address = DPBus;
@@ -339,10 +341,10 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             1: DPBus = reg_ram_data_out;
             2: DPBus = { ~memory_address[15:12], memory_address[11:8] };
             3: DPBus = memory_address[7:0];
-            4: ;
-            5: ;
-            6: ;
-            7: ;
+            4: DPBus = swap_register;
+            5: DPBus = reg_ram_data_out;
+            6: DPBus = { ~memory_address[15:12], memory_address[11:8] };
+            7: DPBus = memory_address[7:0];
             8: ; // DPBus = translated address hi, 17:11 (17 down), and top 3 bits together
             9: DPBus = { ~condition_codes[0], ~condition_codes[1], ~condition_codes[2], ~condition_codes[3], 4'b0000 }; // low nibble is sense switches
             10: DPBus = bus_read; // DPBus = (e7 == 3) ? dataInBus : bus_read;
@@ -371,9 +373,12 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             condition_codes <= 0;
             flags_register <= 0;
             writeEnBus <= 0;
+            writEnDelayed <= 0;
             pipeline <= 56'h42abc618b781c0; // First microcode word. Synth prefers it this way.
             uc_rom_address_pipe <= 0;
             interrupt_level <= 0;
+            bus_read <= 0;
+            bus_write <= 0;
         end else begin
             pipeline <= uc_rom_data;
             uc_rom_address_pipe <= uc_rom_address;
@@ -410,7 +415,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             `endif
             `ifdef TRACE_WR
                 if (writeEnBus == 1) begin
-                    $display("    WR %x %x", memory_address, result_register);
+                    $display("    WR %x %x", memory_address, bus_write);
                 end
             `endif
             `ifdef TRACE_RD
@@ -457,7 +462,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 7: swap_register <= { DPBus[3:0], DPBus[7:4] };
             endcase
 
-            writeEnBus = 0;
+            writeEnBus <= writEnDelayed;
+            writEnDelayed <= 0;
 
             // 74LS138
             case (k11)
@@ -474,7 +480,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                             work_address[7:0] <= memory_address[7:0];
                         end
                     end
-                7: writeEnBus <= 1;
+                7: begin bus_write <= FBus; writEnDelayed <= 1; end
             endcase
         end
     end

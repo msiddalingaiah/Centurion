@@ -14,6 +14,11 @@ module Memory(input wire clock, input wire [15:0] address, input wire write_en, 
     reg [7:0] rom_cells[0:2047];
     reg [7:0] ram_cells[0:2047];
 
+    integer i;
+    initial begin
+        for (i=0; i<2048; i=i+1) ram_cells[i] = 8'h00;
+    end
+
     wire [10:0] mapped_address = address[10:0];
 
     always @(*) begin
@@ -59,6 +64,11 @@ module CPU6TestBench;
         sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
         wait(sim_end == 1);
 
+        // $readmemh("programs/diag_f1.txt", ram.rom_cells);
+        // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
+
+        // #1000000 $finish;
+
         // $readmemh("programs/cylon.txt", ram.rom_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
 
@@ -68,13 +78,9 @@ module CPU6TestBench;
         // $readmemh("programs/blink.txt", ram.rom_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
 
-        // $readmemh("programs/diag_f1.txt", ram.rom_cells);
-        // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
-
         // $readmemh("programs/sjs_f60800.txt", ram.rom_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
 
-        // #1000000 $finish;
 
         $display("All done!");
         $finish;

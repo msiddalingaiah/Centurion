@@ -300,7 +300,7 @@ class Disassembler(object):
             oren = f'OR{or1}{or0}'
         comb = f'{time} {addr:03x}: {oren} {d2d3Map[d2d3]:12s} {aluCode:24s} {fbr:9s}'
         seq = f'{e6Map[e6]} {h11Map[h11]} {k11Map[k11]} {e7Map[e7]}  {inst}'
-        return f'{comb} | {seq}'
+        return f'{comb} | {seq} | FL({flags_register:02x}) CC({condition_codes:02x})'
 
 if __name__ == '__main__':
     vcd = VCDFile('vcd/CPUTestBench.vcd')
