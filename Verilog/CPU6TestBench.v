@@ -72,15 +72,8 @@ module CPU6TestBench;
         // $readmemh("programs/cylon.txt", ram.rom_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
 
-        // $readmemh("programs/sjs_4700.txt", ram.rom_cells);
-        // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
-
         // $readmemh("programs/blink.txt", ram.rom_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
-
-        // $readmemh("programs/sjs_f60800.txt", ram.rom_cells);
-        // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
-
 
         $display("All done!");
         $finish;

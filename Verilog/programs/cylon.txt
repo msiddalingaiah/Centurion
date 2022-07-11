@@ -30,6 +30,19 @@ a1 // STAL #5c00 (LEDPanel)
 0e
 0e
 0e
+80 // LDAL #40
+40
+a1 // STAL #5c00 (LEDPanel)
+5c
+00
+0e
+0e
+0e
+0e
+0e
+0e
+0e
+0e
 2c // SRAL
 15 // BNZ
 f2
