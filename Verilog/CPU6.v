@@ -199,7 +199,6 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     wire [2:0] h11 = pipeline[12:10];
     wire [2:0] k11 = pipeline[9:7];
     wire [2:0] e6 = pipeline[6:4];
-    wire [1:0] j13 = pipeline[21:20];
 
     // Muxes
 
@@ -217,13 +216,19 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     wire [1:0] j12 = pipeline[17:16];
     reg cc_m, cc_v;
 
-    // F6 ALU carry in mus 74LS153 (half used)
+    // F6 ALU carry in mux 74LS153 (half used)
     // H6 ALU shift mux
     wire [1:0] f6h6 = pipeline[52:51];
 
     // K9 JSR mux 74151
     wire k9_enable = pipeline[15];
     wire [2:0] k9 = pipeline[18:16];
+
+    // J13 OR0/OR1 mux 74LS153
+    wire [1:0] j13 = pipeline[21:20];
+
+    // K13 OR2/OR3 mux 74LS153
+    wire [1:0] k13 = pipeline[23:22];
 
     // Constant (immediate data)
     wire [7:0] constant = ~pipeline[16+7:16];
@@ -263,6 +268,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
         alu1_ram3_in = 0;
         alu0_q0_in = 0;
         if (alu_i7 == 0) begin
+            // Right shift
             case (f6h6)
                 0: alu1_ram3_in = alu1_f3;
                 1: alu1_ram3_in = flags_register[3];
@@ -270,6 +276,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 3: alu1_ram3_in = alu1_cout;
             endcase
         end else begin
+            // Left shift
             case (f6h6)
                 0: alu0_q0_in = 0;
                 1: alu0_q0_in = flags_register[3];
@@ -317,10 +324,18 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
 
         seq0_orin = 0;
         if (case_ == 0) begin
-            if (j13 == 0) begin
-                seq0_orin[0] = flags_register[1];
-                seq0_orin[1] = flags_register[0];
-            end
+            case (j13)
+                0: begin seq0_orin[0] = flags_register[1]; seq0_orin[1] = flags_register[0]; end
+                1: begin seq0_orin[0] = flags_register[4]; seq0_orin[1] = flags_register[2]; end
+                2: ; // OR0 = PA18; OR1 = BAD.PG;
+                3: ; // Not used
+            endcase
+            case (k13)
+                0: seq0_orin[3] = condition_codes[3]; // OR2 = INT.EN;
+                1: ; // OR2 = LVL15.Q; OR3 = INTR.Q;
+                2: ; // OR2 = E10.6.Q; OR3 = DMA13.Q;
+                3: ; // Not used
+            endcase
         end
 
         seq1_orin = 0;
