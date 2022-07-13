@@ -240,6 +240,7 @@ class Disassembler(object):
         case_ = self.getSignal(sig, 'cpu.case_').value
         j13 = self.getSignal(sig, 'cpu.j13').value
         condition_codes = self.getSignal(sig, 'cpu.condition_codes').value
+        f6h6 = self.getSignal(sig, 'cpu.f6h6').value
 
         if k11 == 6:
             k11Map[6] = f'WR.LO<-RR({result_register:02x})'
@@ -300,7 +301,7 @@ class Disassembler(object):
             oren = f'OR{or1}{or0}'
         comb = f'{time} {addr:03x}: {oren} {d2d3Map[d2d3]:12s} {aluCode:24s} {fbr:9s}'
         seq = f'{e6Map[e6]} {h11Map[h11]} {k11Map[k11]} {e7Map[e7]}  {inst}'
-        return f'{comb} | {seq} | FL({flags_register:02x}) CC({condition_codes:02x})'
+        return f'{comb} f6hf({f6h6}) | {seq} | FL({flags_register:02x}) CC({condition_codes:02x})'
 
 if __name__ == '__main__':
     vcd = VCDFile('vcd/CPUTestBench.vcd')

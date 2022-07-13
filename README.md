@@ -67,6 +67,23 @@ The board can be programmed from WSL Ubuntu using:
 make sudo-prog
 ```
 
+Resource utilization and timing analysis is below:
+
+```
+Info: Device utilisation:
+Info:            ICESTORM_LC:  1204/ 7680    15%
+Info:           ICESTORM_RAM:    30/   32    93%
+Info:                  SB_IO:     9/  256     3%
+Info:                  SB_GB:     5/    8    62%
+Info:           ICESTORM_PLL:     1/    2    50%
+Info:            SB_WARMBOOT:     0/    1     0%
+
+Info: Max frequency for clock      'clock_$glb_clk': 40.37 MHz (PASS at 12.00 MHz)
+Info: Max frequency for clock 'clock20MHz_$glb_clk': 655.31 MHz (PASS at 12.00 MHz)
+
+Info: Max delay posedge clock_$glb_clk -> <async>: 2.19 ns
+```
+
 ## Architecture
 
 The CPU6 is an interesting design. It is based on the [AMD Am2900](https://en.wikipedia.org/wiki/AMD_Am2900) family of bit slice devices. The entire CPU fits on a single board, using two Am2901s to make an 8-bit ALU. The control unit is [microcoded](https://en.wikipedia.org/wiki/Microcode), using 2 Am2909 microsequencers, and 1 Am2911 microsequencer with a 2048 word x 56-bit microprogram stored in seven EPROMs. It is typical of minicomputers of that era. Discrete CPUs based on the Am2900 family were soon superceded by fully integrated VLSI CPUs, such as the [Intel 8086](https://en.wikipedia.org/wiki/Intel_8086), [Motorola 68000](https://en.wikipedia.org/wiki/Motorola_68000), and numerous others.
