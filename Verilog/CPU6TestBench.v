@@ -12,14 +12,15 @@ module Memory(input wire clock, input wire [15:0] address, input wire write_en, 
     output reg [7:0] data_out);
 
     reg [7:0] rom_cells[0:2047];
-    reg [7:0] ram_cells[0:2047];
+    reg [7:0] ram_cells[0:4095];
 
     integer i;
     initial begin
-        for (i=0; i<2048; i=i+1) ram_cells[i] = 8'h00;
+        for (i=0; i<4096; i=i+1) ram_cells[i] = 8'h00;
     end
 
-    wire [10:0] mapped_address = address[10:0];
+    wire [10:0] low11 = address[10:0];
+    wire [11:0] low12 = address[11:0];
 
     always @(*) begin
         data_out = 0;
@@ -31,15 +32,15 @@ module Memory(input wire clock, input wire [15:0] address, input wire write_en, 
             16'hf110: data_out = 8'h0d; // Diag DIP switches
             default:
                 begin
-                    if (address[15:12] == 4'h8) data_out = rom_cells[mapped_address];
-                    if (address[15:8] == 8'hb8) data_out = ram_cells[mapped_address];
+                    if (address[15:12] == 4'h8) data_out = rom_cells[low11];
+                    if (address[15:12] == 8'hb) data_out = ram_cells[low12];
                 end
         endcase
     end
 
     always @(posedge clock) begin
-        if (write_en == 1 && address[15:8] == 8'hb8) begin
-            ram_cells[mapped_address] <= data_in;
+        if (write_en == 1 && address[15:12] == 8'hb) begin
+            ram_cells[low12] <= data_in;
         end
     end
 endmodule

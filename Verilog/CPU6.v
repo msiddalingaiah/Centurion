@@ -291,11 +291,11 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 0: cc_l = condition_codes[3];
                 1: cc_l = ~condition_codes[3];
                 2: cc_l = flags_register[3];
-                3: cc_l = 0;
+                3: cc_l = 1;
                 4: cc_l = result_register[4];
                 5: cc_l = alu1_ram3_in;
                 6: cc_l = alu_i7 ? alu1_q3_out : alu0_ram0_out;
-                7: cc_l = alu0_q0_in;
+                7: cc_l = alu0_q0_out;
             endcase
         end
 

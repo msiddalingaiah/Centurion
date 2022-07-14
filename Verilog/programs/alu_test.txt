@@ -63,16 +63,39 @@ f7
 a1 // STAL #f201
 f2
 01
-80 // LDAL #40
+90 // LDAW #0201
+02
+01
+26 // RRR AL, 1
+00
+26 // RRR AL, 1
+00
+26 // RRR AL, 1
+00
+26 // RRR AL, 1
+00
+90 // LDAW #0201
+02
+01
+36 // RRR AW, 1
+00
+36 // RRR AW, 1
+00
+36 // RRR AW, 1
+00
+36 // RRR AW, 1
+00
+90 // LDAW #4080
 40
-27 // RLR AL, 1
-10
-27 // RLR AL, 1
-10
-27 // RLR AL, 1
-10
-27 // RLR AL, 1
-10
+80
+37 // RLR AW, 1
+00
+37 // RLR AW, 1
+00
+37 // RLR AW, 1
+00
+37 // RLR AW, 1
+00
 80 // LDAL #01
 01
 a1 // STAL #f900 (sim_end <= 1)

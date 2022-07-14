@@ -138,11 +138,12 @@ class VCDFile(object):
                         signals[sig.getTag()] = sig
                     elif cols[0] != '$end':
                         valueStr = cols[0]
-                        # print(valueStr)
+                        #print(valueStr)
                         value = -1
                         if 'x' not in valueStr[0]:
                             value = int(valueStr[0])
-                        sig = Signal(time, self.signalMap.get(valueStr[1]), value)
+                        #print(value)
+                        sig = Signal(time, self.signalMap.get(valueStr[1:]), value)
                         signals[sig.getTag()] = sig
 
     def copy(self, sigs):
@@ -174,7 +175,7 @@ class Disassembler(object):
         tag = self.signalTagMap[name]
         return sig[tag]
 
-    def getALUCode(self, aluA, aluB, aluOp, aluSrc, aluDest, cin):
+    def getALUCode(self, aluA, aluB, aluOp, aluSrc, aluDest, cin, cout):
         r, s = ALU_SRC_MAP[aluSrc]
         if r == 'A':
             r = f'r{aluA}'
@@ -189,9 +190,12 @@ class Disassembler(object):
         q = ALU_Q_DEST_MAP[aluDest].format(f=f)
         a = f'r{aluA}'
         y = ALU_OUT_MAP[aluDest].format(f=f, a=a)
-        if (aluOp == 0 or aluOp == 1) and cin == 1:
-            return f'{mem}+{cin} {q} {y}+{cin}'
-        return f'{mem} {q} {y}'
+        c = ''
+        if cout:
+            c = 'C'
+        if (aluOp == 0 or aluOp == 1 or aluOp == 2) and cin:
+            return f'{mem}+{cin} {q} {y}+{cin} {c}'
+        return f'{mem} {q} {y} {c}'
 
     def disassembleAll(self):
         code = []
@@ -281,7 +285,8 @@ class Disassembler(object):
         alu_op = self.getSignal(sig, 'cpu.alu_op').value
         alu_dest = self.getSignal(sig, 'cpu.alu_dest').value
         alu0_cin = self.getSignal(sig, 'cpu.alu0_cin').value
-        aluCode = self.getALUCode(alu_a, alu_b, alu_op, alu_src, alu_dest, alu0_cin)
+        alu1_cout = self.getSignal(sig, 'cpu.alu1_cout').value
+        aluCode = self.getALUCode(alu_a, alu_b, alu_op, alu_src, alu_dest, alu0_cin, alu1_cout)
         if k11 == 3:
             k11Map[3] = f'F11<-aluB({alu_b:1x})'
         if e7 == 2:
@@ -294,11 +299,9 @@ class Disassembler(object):
             inst = get_op_code(DPBus)
         time = int(clock.time/100)
 
-        or0 = seq0_orin & 1
-        or1 = (seq0_orin>>1) & 1
-        oren = '    '
-        if case_ == 0 and j13 == 0:
-            oren = f'OR{or1}{or0}'
+        oren = '   '
+        if case_ == 0 and seq0_orin != 0:
+            oren = f'OR{seq0_orin:1x}'
         comb = f'{time} {addr:03x}: {oren} {d2d3Map[d2d3]:12s} {aluCode:24s} {fbr:9s}'
         seq = f'{e6Map[e6]} {h11Map[h11]} {k11Map[k11]} {e7Map[e7]}  {inst}'
         return f'{comb} f6hf({f6h6}) | {seq} | FL({flags_register:02x}) CC({condition_codes:02x})'
