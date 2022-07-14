@@ -96,6 +96,8 @@ f2
 00
 37 // RLR AW, 1
 00
+06 // SL
+07 // RL
 80 // LDAL #01
 01
 a1 // STAL #f900 (sim_end <= 1)

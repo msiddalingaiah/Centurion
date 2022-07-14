@@ -11,7 +11,7 @@
 module Memory(input wire clock, input wire [15:0] address, input wire write_en, input wire [7:0] data_in,
     output reg [7:0] data_out);
 
-    reg [7:0] rom_cells[0:2047];
+    reg [7:0] rom_cells[0:8191];
     reg [7:0] ram_cells[0:4095];
 
     integer i;
@@ -19,7 +19,7 @@ module Memory(input wire clock, input wire [15:0] address, input wire write_en, 
         for (i=0; i<4096; i=i+1) ram_cells[i] = 8'h00;
     end
 
-    wire [10:0] low11 = address[10:0];
+    wire [12:0] low13 = address[12:0];
     wire [11:0] low12 = address[11:0];
 
     always @(*) begin
@@ -32,7 +32,7 @@ module Memory(input wire clock, input wire [15:0] address, input wire write_en, 
             16'hf110: data_out = 8'h0d; // Diag DIP switches
             default:
                 begin
-                    if (address[15:12] == 4'h8) data_out = rom_cells[low11];
+                    if (address[15:13] == 3'b100) data_out = rom_cells[low13];
                     if (address[15:12] == 8'hb) data_out = ram_cells[low12];
                 end
         endcase
@@ -65,10 +65,10 @@ module CPU6TestBench;
         sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
         wait(sim_end == 1);
 
-        // $readmemh("programs/diag_f1.txt", ram.rom_cells);
+        // $readmemh("programs/diag.txt", ram.rom_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
 
-        // #1000000 $finish;
+        // #18000000 $finish;
 
         // $readmemh("programs/cylon.txt", ram.rom_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
