@@ -25,6 +25,8 @@ module Am2901(input wire clock, input wire [3:0] din, input wire [3:0] aSel,
     reg [3:0] qv;
     reg [3:0] bv;
     reg [3:0] fvalue;
+    reg [3:0] p, g;
+    reg c3, c4;
 
     always @(*) begin
         a = regs[aSel];
@@ -44,16 +46,34 @@ module Am2901(input wire clock, input wire [3:0] din, input wire [3:0] aSel,
             default: ;
         endcase
 
+        p = r | s;
+        g = r & s;
+
         case (aluOp)
-            0: f = r + s + cin;
-            1: f = s + ((~r) & 4'hf) + cin;
-            2: f = r + ((~s) & 4'hf) + cin;
-            3: f = r | s;
-            4: f = r & s;
-            5: f = (~r) & s;
-            6: f = r ^ s;
-            7: f = ~(r ^ s);
-            default: f = 0;
+            0: ;
+            1: begin p = (~r) | s; g = (~r) & s; end
+            2: begin p = r | (~s); g = r & (~s); end
+            3: ;
+            4: ;
+            5: begin p = (~r) | s; g = (~r) & s; end
+            6: ;
+            7: ;
+        endcase
+
+        c4 = g[3] | (p[3] & g[2]) | (p[3] & p[2] & g[1]) | (p[3] & p[2] & p[1] & g[0]) | (p[3] & p[2] & p[1] & p[0] & cin);
+        c3 = g[2] | (p[2] & g[1]) | (p[2] & p[1] & g[0]) | (p[2] & p[1] & p[0] & cin);
+
+        ovr = 0;
+
+        case (aluOp)
+            0: begin f = r + s + cin; ovr = c3 ^ c4; end
+            1: begin f = s + ((~r) & 4'hf) + cin; ovr = c3 ^ c4; end
+            2: begin f = r + ((~s) & 4'hf) + cin; ovr = c3 ^ c4; end
+            3: begin f = r | s; ovr = (~(p[3]&p[2]&p[1]&p[0])) | cin; end
+            4: begin f = r & s; ovr = g[3]|g[2]|g[1]|g[0] | cin; end
+            5: begin f = (~r) & s; ovr = g[3]|g[2]|g[1]|g[0] | cin; end
+            6: begin f = r ^ s; end
+            7: begin f = ~(r ^ s); end
         endcase
 
         cout = f[4];
@@ -62,9 +82,6 @@ module Am2901(input wire clock, input wire [3:0] din, input wire [3:0] aSel,
             fzero = 1;
         end
         f3 = f[3];
-
-        // TODO: compute ovr
-        ovr = 0;
         
         qv = 0;
         bv = 0;
