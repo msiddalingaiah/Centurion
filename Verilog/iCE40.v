@@ -3,7 +3,7 @@
 `include "LEDPanel.v"
 `include "PLL.v"
 
-module BlockRAM(input wire clock, input wire [15:0] address, input wire write_en, input wire [7:0] data_in,
+module BlockRAM(input wire clock, input wire [18:0] address, input wire write_en, input wire [7:0] data_in,
     output wire [7:0] data_out);
 
     initial begin
@@ -49,7 +49,7 @@ module iCE40(input clock_100MHz, output LED1, output LED2, output LED3, output L
 
     wire writeEnBus;
     wire [7:0] data_c2r, data_r2c;
-    wire [15:0] addressBus;
+    wire [18:0] addressBus;
     wire [7:0] leds;
     wire clock20MHz, locked, clock;
 

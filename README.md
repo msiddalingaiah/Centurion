@@ -71,18 +71,20 @@ Resource utilization and timing analysis is below:
 
 ```
 Info: Device utilisation:
-Info:            ICESTORM_LC:  1204/ 7680    15%
+Info:            ICESTORM_LC:  5382/ 7680    70%
 Info:           ICESTORM_RAM:    30/   32    93%
 Info:                  SB_IO:     9/  256     3%
 Info:                  SB_GB:     5/    8    62%
 Info:           ICESTORM_PLL:     1/    2    50%
 Info:            SB_WARMBOOT:     0/    1     0%
 
-Info: Max frequency for clock      'clock_$glb_clk': 40.37 MHz (PASS at 12.00 MHz)
-Info: Max frequency for clock 'clock20MHz_$glb_clk': 655.31 MHz (PASS at 12.00 MHz)
+Info: Max frequency for clock      'clock_$glb_clk': 39.35 MHz (PASS at 12.00 MHz)
+Info: Max frequency for clock 'clock20MHz_$glb_clk': 362.45 MHz (PASS at 12.00 MHz)
 
-Info: Max delay posedge clock_$glb_clk -> <async>: 2.19 ns
+Info: Max delay posedge clock_$glb_clk -> <async>: 2.29 ns
 ```
+
+Most of the LCs (about 4000 or so) are used for page table lookup, as that is not pipelined and cannot use block RAM. Without the page table, only 1200 LCs are required.
 
 ## Architecture
 
@@ -100,7 +102,7 @@ Below is the CPU data path with enables for busses and registers. The enables ar
 
 ## Status
 
-Development is in progress. Most 8 and 16 bit instructions are known to work. A few instructions do not operate correctly.
+Development is in progress. CPU6 instruction tests pass.
 
 ### Links
 
