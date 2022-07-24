@@ -8,7 +8,7 @@
 `include "CPU6.v"
 `include "Clock.v"
 
-module Memory(input wire clock, input wire [15:0] address, input wire write_en, input wire [7:0] data_in,
+module Memory(input wire clock, input wire [18:0] address, input wire write_en, input wire [7:0] data_in,
     output reg [7:0] data_out);
 
     reg [7:0] rom_cells[0:8191];
@@ -25,21 +25,22 @@ module Memory(input wire clock, input wire [15:0] address, input wire write_en, 
     always @(*) begin
         data_out = 0;
         case (address)
-            16'hfd00: data_out = 8'h71; // Reset vector, JMP 8001
-            16'hfd01: data_out = 8'h80;
-            16'hfd02: data_out = 8'h01;
-            16'hf200: data_out = 8'h02; // Diag MUX 0 status
-            16'hf110: data_out = 8'h0d; // Diag DIP switches
+            19'h3fd00: data_out = 8'h71; // Reset vector, JMP 8001
+            19'h3fd01: data_out = 8'h80;
+            19'h3fd02: data_out = 8'h01;
+            19'h3f200: data_out = 8'h02; // Diag MUX 0 status
+            19'h3f110: data_out = 8'h0d; // Diag DIP switches
             default:
                 begin
-                    if (address[15:13] == 3'b100) data_out = rom_cells[low13];
-                    if (address[15:12] == 8'hb) data_out = ram_cells[low12];
+                    if (address[18:13] == 4) data_out = rom_cells[low13];
+                    if (address[18:12] == 7'hb) data_out = ram_cells[low12];
+                    if (address[18:8] == 0) data_out = data_in;
                 end
         endcase
     end
 
     always @(posedge clock) begin
-        if (write_en == 1 && address[15:12] == 8'hb) begin
+        if (write_en == 1 && address[19:12] == 16'hb) begin
             ram_cells[low12] <= data_in;
         end
     end
@@ -70,6 +71,11 @@ module CPU6TestBench;
 
         // #18000000 $finish;
 
+        // $readmemh("programs/inst_test.txt", ram.rom_cells);
+        // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
+
+        // #4000000 $finish;
+
         // $readmemh("programs/cylon.txt", ram.rom_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
 
@@ -83,7 +89,7 @@ module CPU6TestBench;
     reg [8*64:1] ramfile;
     wire writeEnBus;
     wire [7:0] data_c2r, data_r2c;
-    wire [15:0] addressBus;
+    wire [18:0] addressBus;
     wire clock;
     Clock cg0(clock);
     Memory ram(clock, addressBus, writeEnBus, data_c2r, data_r2c);
@@ -95,13 +101,13 @@ module CPU6TestBench;
     always @(posedge clock) begin
         if (writeEnBus == 1) begin
             // Pretend there's a UART here :-)
-            if (addressBus == 16'hf201) begin
+            if (addressBus == 19'h3f201) begin
                 if ((cc >= 32) || (cc == 9) || (cc == 10) || (cc == 13)) begin
                     $write("%s", cc);
                 end
             end
             // A hack to stop simulation
-            if (addressBus == 16'hf900 && data_c2r == 8'h01) begin
+            if (addressBus == 19'h3f900 && data_c2r == 8'h01) begin
                 sim_end <= 1;
             end
         end

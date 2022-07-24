@@ -98,6 +98,15 @@ f2
 00
 06 // SL
 07 // RL
+90 // LDAW #a55a
+a5
+5a
+d1 // LDBW 0
+00
+00
+d1 // LDBW
+00
+24
 80 // LDAL #01
 01
 a1 // STAL #f900 (sim_end <= 1)

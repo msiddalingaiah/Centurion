@@ -11,14 +11,19 @@
 `endif
 
 module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
-    output reg writeEnBus, output wire [15:0] addressBus, output wire [7:0] dataOutBus);
+    output reg writeEnBus, output wire [18:0] addressBus, output wire [7:0] dataOutBus);
 
+    integer i;
     initial begin
         cycle_counter = 0;
+        for (i=0; i<256; i=i+1) page_table[i] = 0;
     end
 
-    assign addressBus = memory_address;
     assign dataOutBus = bus_write;
+    wire [7:0] page_address = { memory_address[15:11], page_table_base };
+    wire [7:0] page_table_out = page_table[page_address];
+    wire [18:0] virtual_address = { page_table_out, memory_address[10:0] };
+    assign addressBus = virtual_address;
 
     /*
      * Instrumentation
@@ -56,6 +61,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     reg [7:0] bus_read, bus_write;
     // interrupt_level D9 74LS378
     reg [7:0] interrupt_level;
+    // Page table base register D11 74LS378
+    reg [2:0] page_table_base;
     // write delay
     reg writEnDelayed;
 
@@ -192,6 +199,9 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     assign alu1_q3_in = alu0_ram0_out;
     assign alu0_ram0_in = alu1_q3_out;
 
+    // Page table B9/B10 93L422
+    reg [7:0] page_table[0:255];
+
     // Decoders
     // d2d3 is decoded before pipeline, but outputs are registered.
     wire [3:0] d2d3 = pipeline[3:0];
@@ -237,6 +247,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     reg [7:0] DPBus;
     reg [7:0] FBus;
 
+    wire not_mem = ~(memory_address[15:8] == 0);
+    wire bad_page = ~(virtual_address[18:13] == 6'h3f && virtual_address[11] == 1);
 
     // Guideline #3: When modeling combinational logic with an "always" 
     //              block, use blocking assignments.
@@ -247,7 +259,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 0: ; // Bus busy
                 1: jsr_ = register_index[0] | register_index[4];
                 2: jsr_ = ~register_index[0];
-                3: ; // NOT.MEM
+                3: jsr_ = not_mem; // NOT.MEM
                 4: ; // DMA?
                 5: ; // DMA interrupt active
                 6: ; // Parity error
@@ -327,7 +339,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             case (j13)
                 0: begin seq0_orin[0] = flags_register[1]; seq0_orin[1] = flags_register[0]; end
                 1: begin seq0_orin[0] = flags_register[4]; seq0_orin[1] = flags_register[2]; end
-                2: ; // OR0 = PA18; OR1 = BAD.PG;
+                2: begin seq0_orin[0] = ~virtual_address[18]; seq0_orin[1] = bad_page; end // OR0 = PA18; OR1 = BAD.PG;
                 3: ; // Not used
             endcase
             case (k13)
@@ -394,6 +406,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             interrupt_level <= 0;
             bus_read <= 0;
             bus_write <= 0;
+            page_table_base <= 0;
         end else begin
             pipeline <= uc_rom_data;
             uc_rom_address_pipe <= uc_rom_address;
@@ -406,7 +419,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             `ifdef TRACE_I
                 if (uc_rom_address_pipe == 11'h103) begin
                     $display("%x F:%x C:%x A:%x%x B:%x%x X:%x%x Y:%x%x Z:%x%x S:%x%x C:%x%x | %x%s",
-                        memory_address-1, flags_register, condition_codes,
+                        virtual_address-1, flags_register, condition_codes,
                         reg_ram.memory[1], reg_ram.memory[0],
                         reg_ram.memory[3], reg_ram.memory[2],
                         reg_ram.memory[5], reg_ram.memory[4],
@@ -445,7 +458,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 1: result_register <= FBus;
                 2: register_index <= FBus; // uC bit 53 might simplify 16 bit register write
                 3: interrupt_level <= FBus; // load D9
-                4: ; // load page table base register
+                4: page_table_base <= FBus[2:0]; // load page table base register
                 5: memory_address <= work_address;
                 6: ; // load AR on 2909s, see above
                 7: condition_codes <= { cc_l, cc_f, cc_m, cc_v } ; // load condition code register M12
@@ -487,7 +500,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 2: ;
                 3: ; // enable F11 addressable latch, machine state, bus state, A0-2 on F11 are B1-3 and D input is B0
                 4: ;
-                5: ;
+                5: page_table[page_address] <= result_register;
                 6: // Load work_address low byte
                     begin
                         work_address[7:0] <= result_register;
