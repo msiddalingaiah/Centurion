@@ -13,15 +13,18 @@ module Memory(input wire clock, input wire [18:0] address, input wire write_en, 
 
     reg [7:0] rom_cells[0:8191];
     reg [7:0] ram_cells[0:4095];
+    reg [7:0] low_ram_cells[0:4095];
 
     integer i;
     initial begin
         for (i=0; i<4096; i=i+1) ram_cells[i] = 8'h00;
+        for (i=0; i<4096; i=i+1) low_ram_cells[i] = 8'h00;
     end
 
     wire rom_select = address[18:13] == 4;
     wire ram_select = address[18:12] == 7'hb;
     wire reg_select = address[18:8] == 0;
+    wire low_ram_select = address[18:12] == 0;
     wire [12:0] low13 = address[12:0];
     wire [11:0] low12 = address[11:0];
 
@@ -37,14 +40,16 @@ module Memory(input wire clock, input wire [18:0] address, input wire write_en, 
                 begin
                     if (rom_select) data_out = rom_cells[low13];
                     if (ram_select) data_out = ram_cells[low12];
+                    if (low_ram_select) data_out = low_ram_cells[low12];
                     if (reg_select) data_out = data_in;
                 end
         endcase
     end
 
     always @(posedge clock) begin
-        if (write_en && ram_select) begin
-            ram_cells[low12] <= data_in;
+        if (write_en) begin
+            if (ram_select) ram_cells[low12] <= data_in;
+            if (low_ram_select) low_ram_cells[low12] <= data_in;
         end
     end
 endmodule
