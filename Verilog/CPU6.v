@@ -59,8 +59,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     reg [3:0] condition_codes;
     // bus_read, bus_write A11/A12 Am2907
     reg [7:0] bus_read, bus_write;
-    // interrupt_level D9 74LS378
-    reg [7:0] interrupt_level;
+    // interrupt_level D9 74LS378, only four bits used
+    reg [3:0] interrupt_level;
     // Page table base register D11 74LS378
     reg [2:0] page_table_base;
     // write delay
@@ -80,7 +80,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     wire bit53 = pipeline[53];
     wire reg_low_select = bit53;
     // High/low register select, C14 74LS157 mux, D10 74LS02 NOR gate
-    wire [3:0] reg_addr_hi = pipeline[55] ? interrupt_level[7:4] : register_index[7:4];
+    wire [3:0] reg_addr_hi = pipeline[55] ? interrupt_level : register_index[7:4];
     wire [7:0] reg_ram_addr = { reg_addr_hi, register_index[3:1], ~(reg_low_select | register_index[0]) };
     wire rr_write_en = k11 == 4;
     wire [7:0] reg_ram_data_in = result_register;
@@ -247,8 +247,11 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     reg [7:0] DPBus;
     reg [7:0] FBus;
 
-    wire not_mem = ~(memory_address[15:8] == 0);
-    wire bad_page = ~(virtual_address[18:13] == 6'h3f && virtual_address[11] == 1);
+    wire bad_page_n = ~(virtual_address[18:13] == 6'h3f && virtual_address[11] == 1);
+    wire reg_n = ~(~virtual_address[12] & ~(memory_address[9] | memory_address[10]) &
+        ~(virtual_address[15] | virtual_address[16]) & ~memory_address[8] &
+        ~(virtual_address[13] | virtual_address[14]) & ~(virtual_address[11] | virtual_address[12]));
+    wire not_mem = ~(bad_page_n & reg_n);
 
     // Guideline #3: When modeling combinational logic with an "always" 
     //              block, use blocking assignments.
@@ -259,8 +262,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 0: ; // Bus busy
                 1: jsr_ = register_index[0] | register_index[4];
                 2: jsr_ = ~register_index[0];
-                3: jsr_ = not_mem; // NOT.MEM
-                4: ; // DMA?
+                3: jsr_ = ~not_mem; // NOT.MEM
+                4: jsr_ = reg_n & ~virtual_address[18];
                 5: ; // DMA interrupt active
                 6: ; // Parity error
                 7: ; // Interrupt
@@ -339,7 +342,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             case (j13)
                 0: begin seq0_orin[0] = flags_register[1]; seq0_orin[1] = flags_register[0]; end
                 1: begin seq0_orin[0] = flags_register[4]; seq0_orin[1] = flags_register[2]; end
-                2: begin seq0_orin[0] = ~virtual_address[18]; seq0_orin[1] = bad_page; end // OR0 = PA18; OR1 = BAD.PG;
+                2: begin seq0_orin[0] = ~virtual_address[18]; seq0_orin[1] = bad_page_n; end // OR0 = PA18; OR1 = BAD.PG;
                 3: ; // Not used
             endcase
             case (k13)
@@ -418,8 +421,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
 
             `ifdef TRACE_I
                 if (uc_rom_address_pipe == 11'h103) begin
-                    $display("%x F:%x C:%x A:%x%x B:%x%x X:%x%x Y:%x%x Z:%x%x S:%x%x C:%x%x | %x%s",
-                        virtual_address-1, flags_register, condition_codes,
+                    $display("%x F:%x C:%x L:%x A:%x%x B:%x%x X:%x%x Y:%x%x Z:%x%x S:%x%x C:%x%x | %x%s",
+                        virtual_address-1, flags_register, condition_codes, interrupt_level,
                         reg_ram.memory[1], reg_ram.memory[0],
                         reg_ram.memory[3], reg_ram.memory[2],
                         reg_ram.memory[5], reg_ram.memory[4],
@@ -434,8 +437,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 if (jsr_ == 0) begin
                     $display("        uC %x JSR %x%x%x", uc_rom_address_pipe, seq2_din, seq1_din, seq0_din);
                 end
-                if (seq0_orin != 0) begin
-                    $display("        uC %x OR %x -> %x", uc_rom_address_pipe, seq0_orin, uc_rom_address | seq0_orin);
+                if (case_ == 0) begin
+                    $display("        uC %x OR %x -> %x", uc_rom_address_pipe, seq0_orin, uc_rom_address_pipe | seq0_orin);
                 end
                 if (k11 == 3) begin
                     $display("        uC F11.%d <= %d", alu_b[3:1], alu_b[0]);
@@ -457,7 +460,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 0: ;
                 1: result_register <= FBus;
                 2: register_index <= FBus; // uC bit 53 might simplify 16 bit register write
-                3: interrupt_level <= FBus; // load D9
+                3: interrupt_level <= FBus[7:4]; // load D9
                 4: page_table_base <= FBus[2:0]; // load page table base register
                 5: memory_address <= work_address;
                 6: ; // load AR on 2909s, see above

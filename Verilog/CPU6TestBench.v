@@ -69,12 +69,12 @@ module CPU6TestBench;
         // $readmemh("programs/diag.txt", ram.rom_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
 
-        // #18000000 $finish;
+        // #1000000 $finish;
 
         // $readmemh("programs/inst_test.txt", ram.rom_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
 
-        // #4000000 $finish;
+        // #4100000 $finish;
 
         // $readmemh("programs/cylon.txt", ram.rom_cells);
         // sim_end = 0; #0 reset = 0; #50 reset = 1; #200 reset = 0;
