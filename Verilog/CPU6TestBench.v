@@ -8,6 +8,11 @@
 `include "CPU6.v"
 `include "Clock.v"
 
+/**
+ * This file contains a test bench for the CPU6.
+ * It includes two RAM banks and one ROM.
+ * Writing to the MUX UART prints to the console.
+ */
 module Memory(input wire clock, input wire [18:0] address, input wire write_en, input wire [7:0] data_in,
     output reg [7:0] data_out);
 
@@ -23,7 +28,6 @@ module Memory(input wire clock, input wire [18:0] address, input wire write_en, 
 
     wire rom_select = address[18:13] == 4;
     wire ram_select = address[18:12] == 7'hb;
-    wire reg_select = address[18:8] == 0;
     wire low_ram_select = address[18:12] == 0;
     wire [12:0] low13 = address[12:0];
     wire [11:0] low12 = address[11:0];
@@ -41,7 +45,6 @@ module Memory(input wire clock, input wire [18:0] address, input wire write_en, 
                     if (rom_select) data_out = rom_cells[low13];
                     if (ram_select) data_out = ram_cells[low12];
                     if (low_ram_select) data_out = low_ram_cells[low12];
-                    if (reg_select) data_out = data_in;
                 end
         endcase
     end

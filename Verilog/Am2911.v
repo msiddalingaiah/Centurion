@@ -1,4 +1,11 @@
 
+/**
+ * This module implements the AMD 2911 bit slice microprogram sequencer.
+ *
+ * It closely follows the Am2911 data sheet.
+ *
+ * See https://github.com/Nakazoto/CenturionComputer/blob/main/Computer/CPU6%20Board/Datasheets/am2909_am2911.pdf
+ */
 module Am2911(input wire clock, input wire [3:0] din,
     input wire s0, input wire s1, input wire zero, input wire cin, input wire re, input wire fe,
     input wire pup, output reg [3:0] yout, output reg cout);

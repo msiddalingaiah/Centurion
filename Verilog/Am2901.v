@@ -1,4 +1,14 @@
 
+/**
+ * This module implements the AMD 2901 bit slice Arithment Logic Unit (ALU).
+ *
+ * It closely follows the Am2901 data sheet, however some adjustments have been made for FPGA synthesis:
+ *   * Q3/RAM3 tristate lines are replaced with independent in/out wires
+ *   * Overflow is not computed for exclusive OR and exclusive NOR operations, defaulting to zero
+ *   * Register writeback is fully synchronous, which is behaviorally identical to the real Am2901
+ *
+ * See https://github.com/Nakazoto/CenturionComputer/blob/main/Computer/CPU6%20Board/Datasheets/am2901a.pdf
+ */
 module Am2901(input wire clock, input wire [3:0] din, input wire [3:0] aSel,
     input wire [3:0] bSel, input wire [2:0] aluSrc, input wire [2:0] aluOp,
     input wire [2:0] aluDest, input cin, output reg[3:0] yout, output reg cout,

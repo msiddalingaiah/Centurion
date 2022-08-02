@@ -1,4 +1,8 @@
 
+/**
+ * A mapping from instruction opcodes to mnemonics for instruction tracing during simulation.
+ * This module is not used during synthesis.
+ */
 module Instructions();
     reg [32:0] instruction_map[0:255];
     initial begin

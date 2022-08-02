@@ -6,10 +6,18 @@
 `include "MapROM.v"
 `include "RegisterRAM.v"
 
+// Include instruction names for simulation instruction tracing
 `ifdef TRACE_I
     `include "Instructions.v"
 `endif
 
+/**
+ * This module implements the Centurion CPU6.
+ * The original Centurion used a clock with three difference phases.
+ * This design requires only a single phase.
+ *
+ * See https://github.com/Nakazoto/CenturionComputer/wiki/CPU6-Board
+ */
 module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     output reg writeEnBus, output wire [18:0] addressBus, output wire [7:0] dataOutBus);
 
@@ -24,6 +32,8 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
     wire [7:0] page_table_out = page_table[page_address];
     wire [18:0] virtual_address = { page_table_out, memory_address[10:0] };
     assign addressBus = virtual_address;
+    // Register space read mux
+    wire [7:0] dataInCPU = virtual_address[18:8] == 0 ? dataOutBus : dataInBus;
 
     /*
      * Instrumentation
@@ -377,7 +387,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             7: DPBus = memory_address[7:0];
             8: ; // DPBus = translated address hi, 17:11 (17 down), and top 3 bits together
             9: DPBus = { ~condition_codes[0], ~condition_codes[1], ~condition_codes[2], ~condition_codes[3], 4'b0000 }; // low nibble is sense switches
-            10: DPBus = bus_read; // DPBus = (e7 == 3) ? dataInBus : bus_read;
+            10: DPBus = bus_read;
             11: DPBus = 8'h0f; // read ILR (interrupt level register?) { A8 4 bits, H14 4 bits }
             12: ; // read switch 2 other half of dip switches and condition codes?
             13: DPBus = constant;
@@ -451,7 +461,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
             `endif
             `ifdef TRACE_RD
                 if (e7 == 3) begin
-                    $display("    RD %x %x", memory_address, dataInBus);
+                    $display("    RD %x %x", memory_address, dataInCPU);
                 end
             `endif
 
@@ -472,7 +482,7 @@ module CPU6(input wire reset, input wire clock, input wire [7:0] dataInBus,
                 0: ;
                 1: ;
                 2: flags_register <= { 1'b0, 1'b0, flags_register[0], alu0_cout, alu1_cout, alu1_ovr, alu1_f3, alu0_f0 & alu1_f0 };
-                3: bus_read <= dataInBus;
+                3: bus_read <= dataInCPU;
             endcase
 
             // 74LS138

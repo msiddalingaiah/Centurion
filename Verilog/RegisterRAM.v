@@ -1,4 +1,7 @@
 
+/**
+ * This module implements the register file (D13/D14).
+ */
 module RegisterRAM(input wire clock, input wire write_en, input wire [7:0] address, input wire [7:0] data_in,
     output reg [7:0] data_out);
 

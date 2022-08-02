@@ -102,7 +102,7 @@ Below is the CPU data path with enables for busses and registers. The enables ar
 
 ## Status
 
-Development is in progress. CPU6 instruction tests pass.
+All CPU6 instruction tests pass. Interrupt and DMA logic is pending.
 
 ### Links
 

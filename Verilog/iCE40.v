@@ -3,6 +3,9 @@
 `include "LEDPanel.v"
 `include "PLL.v"
 
+/**
+ * This file contains the top level Centurion CPU synthesizable on an Alchitry Cu FGPA board.
+ */
 module BlockRAM(input wire clock, input wire [18:0] address, input wire write_en, input wire [7:0] data_in,
     output wire [7:0] data_out);
 
